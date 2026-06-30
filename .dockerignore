@@ -1,0 +1,14 @@
+.git/
+.gitignore
+*.md
+__pycache__/
+*.pyc
+.venv/
+venv/
+node_modules/
+.env
+.env.local
+.vscode/
+.idea/
+docker/data/
+storage/

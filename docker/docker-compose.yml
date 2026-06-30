@@ -1,0 +1,92 @@
+name: aevix
+
+services:
+  # ── Backend ──────────────────────────────────────────────────
+  backend:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+    image: aevix-backend
+    container_name: aevix-backend
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    env_file:
+      - ../backend/.env
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://aevix:aevix@postgres:5432/aevix
+      - REDIS_URL=redis://redis:6379/0
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    volumes:
+      - ../backend/app:/app/app
+      - aevix_storage:/app/storage
+    networks:
+      - aevix-network
+
+  # ── Frontend ────────────────────────────────────────────────
+  frontend:
+    build:
+      context: ../frontend
+      dockerfile: Dockerfile
+    image: aevix-frontend
+    container_name: aevix-frontend
+    restart: unless-stopped
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    networks:
+      - aevix-network
+
+  # ── PostgreSQL ──────────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: aevix-postgres
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    env_file:
+      - ../backend/.env
+    environment:
+      POSTGRES_USER: aevix
+      POSTGRES_PASSWORD: aevix
+      POSTGRES_DB: aevix
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U aevix"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - aevix-network
+
+  # ── Redis ────────────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: aevix-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - aevix-network
+
+volumes:
+  postgres_data:
+  redis_data:
+  aevix_storage:
+
+networks:
+  aevix-network:
+    driver: bridge
