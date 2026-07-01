@@ -54,11 +54,18 @@ class User(UUIDMixin, TimestampMixin, Base):
     files: Mapped[list[File]] = relationship(
         "File", back_populates="user", cascade="all, delete-orphan"
     )
+    conversations: Mapped[list[Conversation]] = relationship(
+        "Conversation",
+        back_populates="user",
+        cascade="all, delete-orphan",
+        order_by="Conversation.updated_at.desc()",
+    )
 
     def __repr__(self) -> str:
         return f"<User id={self.id} email={self.email!r} role={self.role!r}>"
 
 
 # Avoid circular import at runtime
+from app.models.conversation import Conversation  # noqa: E402, F811
 from app.models.file import File  # noqa: E402, F811
 from app.models.refresh_token import RefreshToken  # noqa: E402, F811
