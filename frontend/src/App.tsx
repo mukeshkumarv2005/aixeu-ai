@@ -14,6 +14,8 @@ import ProfilePage from '@/pages/profile/index'
 import StoragePage from '@/pages/storage/index'
 import DocumentDetailsPage from '@/pages/documents/index'
 import ChatPage from '@/pages/chat/index'
+import KnowledgeBasePage from '@/pages/knowledge/index'
+import KnowledgeBaseDetailPage from '@/pages/knowledge/detail'
 import { useAuthStore } from '@/stores/auth'
 
 export default function App() {
@@ -46,6 +48,8 @@ export default function App() {
           <Route path="chat" element={<ChatPage />} />
           <Route path="storage" element={<StoragePage />} />
           <Route path="storage/:fileId/documents" element={<DocumentDetailsPage />} />
+          <Route path="knowledge" element={<KnowledgeBasePage />} />
+          <Route path="knowledge/:kbId" element={<KnowledgeBaseDetailPage />} />
           <Route path="profile" element={<ProfilePage />} />
         </Route>
       </Route>

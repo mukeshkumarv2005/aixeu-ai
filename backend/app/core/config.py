@@ -109,6 +109,12 @@ class Settings(BaseSettings):
     # ─── Vector Store ──────────────────────────────────────────
     VECTOR_STORE_TYPE: str = "pgvector"
 
+    # ─── Embeddings ────────────────────────────────────────────
+    EMBEDDING_PROVIDER: str = "openai"
+    EMBEDDING_MODEL: str = "text-embedding-3-small"
+    EMBEDDING_DIMENSION: int = 1536
+    EMBEDDING_BATCH_SIZE: int = 32
+
     # ─── Derived Properties ────────────────────────────────────
     @property
     def database_dsn(self) -> str:

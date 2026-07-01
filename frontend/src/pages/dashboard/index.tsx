@@ -6,7 +6,9 @@ import {
   FileText,
   HardDrive,
   BookOpen,
+  Brain,
   BrainCircuit,
+  Layers,
   Sparkles,
   RefreshCw,
   AlertCircle,
@@ -160,6 +162,20 @@ export default function DashboardPage() {
             icon={BookOpen}
             label="Documents Processed"
             value={dashData?.stats.total_documents_processed ?? '-'}
+            color="green"
+            loading={isLoading}
+          />
+          <StatCard
+            icon={Brain}
+            label="Knowledge Bases"
+            value={dashData?.stats.total_knowledge_bases ?? '-'}
+            color="primary"
+            loading={isLoading}
+          />
+          <StatCard
+            icon={Layers}
+            label="KB Chunks"
+            value={dashData?.stats.total_kb_chunks ?? '-'}
             color="green"
             loading={isLoading}
           />

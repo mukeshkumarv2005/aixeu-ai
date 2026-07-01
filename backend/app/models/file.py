@@ -88,6 +88,11 @@ class File(UUIDMixin, TimestampMixin, Base):
         uselist=False,
         cascade="all, delete-orphan",
     )
+    kb_documents: Mapped[list[KnowledgeBaseDocument]] = relationship(
+        "KnowledgeBaseDocument",
+        back_populates="file",
+        cascade="all, delete-orphan",
+    )
 
     def __repr__(self) -> str:
         return (
@@ -97,5 +102,6 @@ class File(UUIDMixin, TimestampMixin, Base):
 
 
 # Avoid circular import at runtime
-from app.models.user import User  # noqa: E402, F811
 from app.models.document import DocumentMetadata, DocumentChunk, DocumentAnalysis  # noqa: E402, F811
+from app.models.knowledge import KnowledgeBaseDocument  # noqa: E402, F811
+from app.models.user import User  # noqa: E402, F811

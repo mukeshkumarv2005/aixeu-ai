@@ -96,7 +96,7 @@ export interface ChatActions {
   loadMessages: (conversationId: string) => Promise<void>
 
   /** Send a message and stream the AI response via SSE. */
-  sendMessage: (content: string, model?: string) => Promise<void>
+  sendMessage: (content: string, model?: string, kbId?: string) => Promise<void>
 
   /** Clear the streaming state. */
   clearStream: () => void
@@ -208,7 +208,7 @@ export const useChatStore = create<ChatState & ChatActions>((set, get) => ({
     }
   },
 
-  sendMessage: async (content, model) => {
+  sendMessage: async (content, model, kbId) => {
     const { currentConversationId } = get()
     if (!currentConversationId) return
 
@@ -240,12 +240,17 @@ export const useChatStore = create<ChatState & ChatActions>((set, get) => ({
         headers['Authorization'] = `Bearer ${token}`
       }
 
+      const body: Record<string, unknown> = { content, model }
+      if (kbId) {
+        body.kb_id = kbId
+      }
+
       const response = await fetch(
         `/api/v1/chat/conversations/${currentConversationId}/messages`,
         {
           method: 'POST',
           headers,
-          body: JSON.stringify({ content, model }),
+          body: JSON.stringify(body),
           credentials: 'include',
         },
       )

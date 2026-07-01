@@ -29,6 +29,7 @@ from app.schemas.chat import (
     StreamChunk,
 )
 from app.services.ai import ChatMessage, get_ai_provider
+from app.services.rag import RAGContextBuilder
 
 router = APIRouter()
 
@@ -246,6 +247,22 @@ async def send_message(
     ai_messages: list[ChatMessage] = []
     for msg in history:
         ai_messages.append(ChatMessage(role=msg.role, content=msg.content))
+
+    # Inject RAG context if a knowledge base was specified
+    if body.kb_id:
+        try:
+            rag = RAGContextBuilder(db)
+            ai_messages = await rag.build_chat_messages(
+                body.content,
+                body.kb_id,
+                ai_messages,
+            )
+        except ValueError as exc:
+            # KB not found or pgvector unavailable — return a helpful error
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"RAG error: {exc}",
+            )
 
     model = body.model or conv.model
     provider = get_ai_provider()

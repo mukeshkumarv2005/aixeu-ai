@@ -1,7 +1,7 @@
 /** Quick action buttons — common tasks one click away. */
 
 import { useNavigate } from 'react-router-dom'
-import { MessageSquare, Upload, User } from 'lucide-react'
+import { MessageSquare, Upload, Brain, User } from 'lucide-react'
 
 export function QuickActions() {
   const navigate = useNavigate()
@@ -22,6 +22,13 @@ export function QuickActions() {
       onClick: () => navigate('/storage'),
     },
     {
+      label: 'Knowledge Base',
+      description: 'Semantic search & RAG',
+      icon: Brain,
+      color: 'bg-indigo-500 hover:bg-indigo-600',
+      onClick: () => navigate('/knowledge'),
+    },
+    {
       label: 'Edit Profile',
       description: 'Update your account',
       icon: User,
@@ -37,7 +44,7 @@ export function QuickActions() {
           Quick Actions
         </h3>
       </div>
-      <div className="grid grid-cols-1 gap-1 p-3 sm:grid-cols-3">
+      <div className="grid grid-cols-1 gap-1 p-3 sm:grid-cols-2 lg:grid-cols-4">
         {actions.map(({ label, description, icon: Icon, color, onClick }) => (
           <button
             key={label}

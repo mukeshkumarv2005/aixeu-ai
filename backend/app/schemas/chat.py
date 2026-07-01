@@ -9,7 +9,7 @@ from datetime import datetime
 from typing import Any
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 
 # ─── Conversation ────────────────────────────────────────────────────────────
@@ -68,6 +68,16 @@ class MessageSend(BaseModel):
 
     content: str
     model: str | None = None  # override the conversation's default model
+
+    # RAG — optional knowledge base to augment the response with
+    kb_id: UUID | None = Field(
+        None,
+        description=(
+            "Optional knowledge base ID for RAG. When set, the system "
+            "retrieves relevant documents from the KB and injects them "
+            "as context for the AI response."
+        ),
+    )
 
 
 # ─── Streaming ───────────────────────────────────────────────────────────────

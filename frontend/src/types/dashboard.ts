@@ -8,6 +8,8 @@ export interface DashboardStats {
   total_input_tokens: number
   total_output_tokens: number
   total_documents_processed: number
+  total_knowledge_bases: number
+  total_kb_chunks: number
 }
 
 export interface RecentChatItem {

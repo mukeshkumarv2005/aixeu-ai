@@ -20,6 +20,7 @@ import {
 import { cn } from '@/lib/utils'
 import { useAuthStore } from '@/stores/auth'
 import { useChatStore, useIsStreaming, useActiveMessages } from '@/stores/chat'
+import { useKnowledgeBases } from '@/api/knowledge'
 import { MarkdownRenderer } from '@/components/chat/markdown'
 import type { ConversationResponse } from '@/stores/chat'
 
@@ -49,6 +50,11 @@ export default function ChatPage() {
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [isAtBottom, setIsAtBottom] = useState(true)
   const [sending, setSending] = useState(false)
+  const [selectedKbId, setSelectedKbId] = useState<string>('')
+
+  // ── Knowledge bases for RAG ──────────────────────────────────────────────
+  const { data: kbData } = useKnowledgeBases(0, 50)
+  const knowledgeBases = kbData?.items ?? []
 
   // ── Refs ──────────────────────────────────────────────────────────────────
   const messagesEndRef = useRef<HTMLDivElement>(null)
@@ -120,14 +126,14 @@ export default function ChatPage() {
     setInput('')
     setSending(true)
     try {
-      await sendMessage(text)
+      await sendMessage(text, undefined, selectedKbId || undefined)
     } finally {
       setSending(false)
 
       // Re-focus the input after streaming finishes
       textareaRef.current?.focus()
     }
-  }, [input, currentConversationId, sending, sendMessage])
+  }, [input, currentConversationId, sending, sendMessage, selectedKbId])
 
   // ── Keyboard shortcut ────────────────────────────────────────────────────
   const handleKeyDown = useCallback(
@@ -380,18 +386,37 @@ export default function ChatPage() {
       <div className="flex flex-1 flex-col">
         {/* Messages header */}
         {currentConversationId && (
-          <div className="flex items-center border-b border-surface-200 bg-white px-4 py-3 dark:border-surface-800 dark:bg-surface-950">
-            <Bot size={18} className="mr-2 text-primary-500" />
-            {(() => {
-              const conv = conversations.find(
-                (c) => c.id === currentConversationId,
-              )
-              return (
-                <span className="truncate text-sm font-medium text-surface-700 dark:text-surface-300">
-                  {conv?.title || 'New Chat'}
-                </span>
-              )
-            })()}
+          <div className="flex items-center justify-between border-b border-surface-200 bg-white px-4 py-2 dark:border-surface-800 dark:bg-surface-950">
+            <div className="flex items-center">
+              <Bot size={18} className="mr-2 text-primary-500" />
+              {(() => {
+                const conv = conversations.find(
+                  (c) => c.id === currentConversationId,
+                )
+                return (
+                  <span className="truncate text-sm font-medium text-surface-700 dark:text-surface-300">
+                    {conv?.title || 'New Chat'}
+                  </span>
+                )
+              })()}
+            </div>
+
+            {/* KB selector */}
+            {knowledgeBases.length > 0 && (
+              <select
+                value={selectedKbId}
+                onChange={(e) => setSelectedKbId(e.target.value)}
+                className="max-w-[200px] rounded-lg border border-surface-300 bg-white px-2 py-1 text-xs text-surface-700 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 dark:border-surface-600 dark:bg-surface-900 dark:text-surface-300"
+                title="Attach knowledge base for RAG"
+              >
+                <option value="">No KB attached</option>
+                {knowledgeBases.map((kb) => (
+                  <option key={kb.id} value={kb.id}>
+                    {kb.name}
+                  </option>
+                ))}
+              </select>
+            )}
           </div>
         )}
 

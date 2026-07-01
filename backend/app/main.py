@@ -15,7 +15,7 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from app.api.v1 import auth, chat, dashboard, documents, health, storage
+from app.api.v1 import auth, chat, dashboard, documents, health, knowledge, storage
 from app.core.config import settings
 from app.core.exceptions import AppException
 from app.core.tasks import cleanup_expired_refresh_tokens
@@ -82,6 +82,7 @@ def create_app() -> FastAPI:
     app.include_router(chat.router, prefix="/api/v1", tags=["Chat"])
     app.include_router(dashboard.router, prefix="/api/v1", tags=["Dashboard"])
     app.include_router(documents.router, prefix="/api/v1", tags=["Documents"])
+    app.include_router(knowledge.router, prefix="/api/v1", tags=["Knowledge Base"])
 
     return app
 

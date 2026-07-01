@@ -60,6 +60,11 @@ class User(UUIDMixin, TimestampMixin, Base):
         cascade="all, delete-orphan",
         order_by="Conversation.updated_at.desc()",
     )
+    knowledge_bases: Mapped[list[KnowledgeBase]] = relationship(
+        "KnowledgeBase",
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
 
     def __repr__(self) -> str:
         return f"<User id={self.id} email={self.email!r} role={self.role!r}>"
@@ -68,4 +73,5 @@ class User(UUIDMixin, TimestampMixin, Base):
 # Avoid circular import at runtime
 from app.models.conversation import Conversation  # noqa: E402, F811
 from app.models.file import File  # noqa: E402, F811
+from app.models.knowledge import KnowledgeBase  # noqa: E402, F811
 from app.models.refresh_token import RefreshToken  # noqa: E402, F811

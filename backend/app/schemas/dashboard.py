@@ -53,6 +53,16 @@ class DashboardStats(BaseModel):
         description="Number of files that have completed document processing.",
         json_schema_extra={"example": 5},
     )
+    total_knowledge_bases: int = Field(
+        default=0,
+        description="Total number of knowledge bases owned by the user.",
+        json_schema_extra={"example": 3},
+    )
+    total_kb_chunks: int = Field(
+        default=0,
+        description="Total number of vector-embedded chunks across all KBs.",
+        json_schema_extra={"example": 1240},
+    )
 
 
 class RecentChatItem(BaseModel):

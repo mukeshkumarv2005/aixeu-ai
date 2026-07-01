@@ -9,6 +9,7 @@ import {
   LayoutDashboard,
   MessageSquare,
   Database,
+  Brain,
   User,
   ChevronLeft,
   ChevronRight,
@@ -23,6 +24,7 @@ const NAV_ITEMS = [
   { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { to: '/chat', label: 'Chat', icon: MessageSquare },
   { to: '/storage', label: 'Storage', icon: Database },
+  { to: '/knowledge', label: 'Knowledge', icon: Brain },
   { to: '/profile', label: 'Profile', icon: User },
 ] as const
 

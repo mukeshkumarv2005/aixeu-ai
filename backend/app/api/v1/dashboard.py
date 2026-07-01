@@ -16,6 +16,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.deps import DbSession, get_current_active_user
 from app.models.conversation import Conversation, Message
 from app.models.file import File
+from app.models.knowledge import KnowledgeBase, KnowledgeBaseDocument
 from app.models.user import User
 from app.models.document import DocumentMetadata
 from app.schemas.dashboard import (
@@ -236,6 +237,31 @@ async def _compute_stats(db: AsyncSession, user_id: uuid.UUID) -> DashboardStats
     )
     total_docs_processed = result.scalar() or 0
 
+    # Knowledge bases
+    result = await db.execute(
+        select(sa_func.count(KnowledgeBase.id)).where(
+            KnowledgeBase.user_id == user_id,
+        )
+    )
+    total_kbs = result.scalar() or 0
+
+    # KB chunks (only count completed documents' chunk_count)
+    result = await db.execute(
+        select(
+            sa_func.coalesce(sa_func.sum(KnowledgeBaseDocument.chunk_count), 0),
+        )
+        .select_from(KnowledgeBaseDocument)
+        .join(
+            KnowledgeBase,
+            KnowledgeBaseDocument.knowledge_base_id == KnowledgeBase.id,
+        )
+        .where(
+            KnowledgeBase.user_id == user_id,
+            KnowledgeBaseDocument.status == "completed",
+        )
+    )
+    total_kb_chunks = result.scalar() or 0
+
     return DashboardStats(
         total_conversations=total_convs,
         total_messages=total_msgs,
@@ -244,6 +270,8 @@ async def _compute_stats(db: AsyncSession, user_id: uuid.UUID) -> DashboardStats
         total_input_tokens=total_input,
         total_output_tokens=total_output,
         total_documents_processed=total_docs_processed,
+        total_knowledge_bases=total_kbs,
+        total_kb_chunks=total_kb_chunks,
     )
 
 
