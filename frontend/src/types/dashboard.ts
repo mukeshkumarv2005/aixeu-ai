@@ -7,6 +7,7 @@ export interface DashboardStats {
   total_storage_bytes: number
   total_input_tokens: number
   total_output_tokens: number
+  total_documents_processed: number
 }
 
 export interface RecentChatItem {

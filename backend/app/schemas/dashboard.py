@@ -48,6 +48,11 @@ class DashboardStats(BaseModel):
         description="Total AI output tokens consumed.",
         json_schema_extra={"example": 42000},
     )
+    total_documents_processed: int = Field(
+        default=0,
+        description="Number of files that have completed document processing.",
+        json_schema_extra={"example": 5},
+    )
 
 
 class RecentChatItem(BaseModel):

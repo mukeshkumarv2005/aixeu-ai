@@ -49,7 +49,13 @@ class File(UUIDMixin, TimestampMixin, Base):
         String(32),
         default="completed",
         nullable=False,
-        comment="Processing status: pending, processing, completed, failed",
+        comment="Processing status: uploaded, queued, processing, completed, failed",
+    )
+
+    processing_error: Mapped[str | None] = mapped_column(
+        String(1024),
+        nullable=True,
+        comment="Error message if processing_status is 'failed'",
     )
 
     # ── Flags ─────────────────────────────────────────────────────
@@ -64,6 +70,24 @@ class File(UUIDMixin, TimestampMixin, Base):
     user: Mapped[User] = relationship(
         "User", back_populates="files"
     )
+    document_metadata: Mapped[DocumentMetadata | None] = relationship(
+        "DocumentMetadata",
+        back_populates="file",
+        uselist=False,
+        cascade="all, delete-orphan",
+    )
+    document_chunks: Mapped[list[DocumentChunk]] = relationship(
+        "DocumentChunk",
+        back_populates="file",
+        cascade="all, delete-orphan",
+        order_by="DocumentChunk.chunk_index",
+    )
+    document_analysis: Mapped[DocumentAnalysis | None] = relationship(
+        "DocumentAnalysis",
+        back_populates="file",
+        uselist=False,
+        cascade="all, delete-orphan",
+    )
 
     def __repr__(self) -> str:
         return (
@@ -74,3 +98,4 @@ class File(UUIDMixin, TimestampMixin, Base):
 
 # Avoid circular import at runtime
 from app.models.user import User  # noqa: E402, F811
+from app.models.document import DocumentMetadata, DocumentChunk, DocumentAnalysis  # noqa: E402, F811

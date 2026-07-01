@@ -5,6 +5,7 @@ import {
   MessagesSquare,
   FileText,
   HardDrive,
+  BookOpen,
   BrainCircuit,
   Sparkles,
   RefreshCw,
@@ -153,6 +154,13 @@ export default function DashboardPage() {
                 : '-'
             }
             color="accent"
+            loading={isLoading}
+          />
+          <StatCard
+            icon={BookOpen}
+            label="Documents Processed"
+            value={dashData?.stats.total_documents_processed ?? '-'}
+            color="green"
             loading={isLoading}
           />
         </div>

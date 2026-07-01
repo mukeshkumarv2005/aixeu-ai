@@ -11,11 +11,13 @@ import asyncio
 import logging
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
-from app.api.v1 import auth, chat, dashboard, health, storage
+from app.api.v1 import auth, chat, dashboard, documents, health, storage
 from app.core.config import settings
+from app.core.exceptions import AppException
 from app.core.tasks import cleanup_expired_refresh_tokens
 
 logger = logging.getLogger(__name__)
@@ -65,12 +67,21 @@ def create_app() -> FastAPI:
         allow_headers=["*"],
     )
 
+    # ── Exception handlers ──────────────────────────────────────
+    @app.exception_handler(AppException)
+    async def app_exception_handler(request: Request, exc: AppException) -> JSONResponse:
+        return JSONResponse(
+            status_code=exc.status_code,
+            content={"detail": exc.detail},
+        )
+
     # ── Routers ────────────────────────────────────────────────
     app.include_router(health.router, prefix="/api/v1", tags=["Health"])
     app.include_router(auth.router, prefix="/api/v1", tags=["Auth"])
     app.include_router(storage.router, prefix="/api/v1", tags=["Storage"])
     app.include_router(chat.router, prefix="/api/v1", tags=["Chat"])
     app.include_router(dashboard.router, prefix="/api/v1", tags=["Dashboard"])
+    app.include_router(documents.router, prefix="/api/v1", tags=["Documents"])
 
     return app
 

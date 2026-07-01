@@ -17,6 +17,7 @@ from app.api.deps import DbSession, get_current_active_user
 from app.models.conversation import Conversation, Message
 from app.models.file import File
 from app.models.user import User
+from app.models.document import DocumentMetadata
 from app.schemas.dashboard import (
     DailyTokenUsage,
     DashboardResponse,
@@ -226,6 +227,15 @@ async def _compute_stats(db: AsyncSession, user_id: uuid.UUID) -> DashboardStats
     total_input = row[0] or 0
     total_output = row[1] or 0
 
+    # Documents processed
+    result = await db.execute(
+        select(sa_func.count(DocumentMetadata.id))
+        .select_from(DocumentMetadata)
+        .join(File, DocumentMetadata.file_id == File.id)
+        .where(File.user_id == user_id)
+    )
+    total_docs_processed = result.scalar() or 0
+
     return DashboardStats(
         total_conversations=total_convs,
         total_messages=total_msgs,
@@ -233,6 +243,7 @@ async def _compute_stats(db: AsyncSession, user_id: uuid.UUID) -> DashboardStats
         total_storage_bytes=total_storage,
         total_input_tokens=total_input,
         total_output_tokens=total_output,
+        total_documents_processed=total_docs_processed,
     )
 
 

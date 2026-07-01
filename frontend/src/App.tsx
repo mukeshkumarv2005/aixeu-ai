@@ -12,6 +12,7 @@ import ResetPasswordPage from '@/pages/auth/reset-password'
 import VerifyEmailPage from '@/pages/auth/verify-email'
 import ProfilePage from '@/pages/profile/index'
 import StoragePage from '@/pages/storage/index'
+import DocumentDetailsPage from '@/pages/documents/index'
 import ChatPage from '@/pages/chat/index'
 import { useAuthStore } from '@/stores/auth'
 
@@ -44,6 +45,7 @@ export default function App() {
           <Route path="dashboard" element={<DashboardPage />} />
           <Route path="chat" element={<ChatPage />} />
           <Route path="storage" element={<StoragePage />} />
+          <Route path="storage/:fileId/documents" element={<DocumentDetailsPage />} />
           <Route path="profile" element={<ProfilePage />} />
         </Route>
       </Route>
