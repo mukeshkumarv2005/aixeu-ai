@@ -84,8 +84,21 @@ class Settings(BaseSettings):
 
     # ─── File Storage ──────────────────────────────────────────
     STORAGE_MAX_SIZE_MB: int = 50
+    STORAGE_DOCUMENT_MAX_SIZE_MB: int = 50
     STORAGE_UPLOAD_DIR: str = "./storage"
     STORAGE_S3_BUCKET: str = ""
+    STORAGE_ALLOWED_MIME_TYPES: str = (
+        "application/pdf,"
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document,"
+        "text/plain,text/markdown,text/csv,"
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,"
+        "application/vnd.openxmlformats-officedocument.presentationml.presentation,"
+        "image/png,image/jpeg,image/webp"
+    )
+
+    @property
+    def allowed_mime_types(self) -> set[str]:
+        return {m.strip() for m in self.STORAGE_ALLOWED_MIME_TYPES.split(",") if m.strip()}
 
     # ─── AI ────────────────────────────────────────────────────
     AI_DEFAULT_PROVIDER: str = "openai"

@@ -14,7 +14,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.v1 import auth, chat, health, storage
+from app.api.v1 import auth, chat, dashboard, health, storage
 from app.core.config import settings
 from app.core.tasks import cleanup_expired_refresh_tokens
 
@@ -70,6 +70,7 @@ def create_app() -> FastAPI:
     app.include_router(auth.router, prefix="/api/v1", tags=["Auth"])
     app.include_router(storage.router, prefix="/api/v1", tags=["Storage"])
     app.include_router(chat.router, prefix="/api/v1", tags=["Chat"])
+    app.include_router(dashboard.router, prefix="/api/v1", tags=["Dashboard"])
 
     return app
 

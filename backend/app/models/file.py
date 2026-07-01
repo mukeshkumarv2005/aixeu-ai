@@ -40,6 +40,17 @@ class File(UUIDMixin, TimestampMixin, Base):
         nullable=False,
         comment="Path returned by the storage provider",
     )
+    checksum: Mapped[str | None] = mapped_column(
+        String(64),
+        nullable=True,
+        comment="SHA-256 hex digest of file content",
+    )
+    processing_status: Mapped[str] = mapped_column(
+        String(32),
+        default="completed",
+        nullable=False,
+        comment="Processing status: pending, processing, completed, failed",
+    )
 
     # ── Flags ─────────────────────────────────────────────────────
     is_temporary: Mapped[bool] = mapped_column(

@@ -24,6 +24,15 @@ from app.schemas.chat import (
     MessageSend,
     StreamChunk,
 )
+from app.schemas.dashboard import (
+    DailyTokenUsage,
+    DashboardResponse,
+    DashboardStats,
+    RecentActivityItem,
+    RecentChatItem,
+    UsageResponse,
+)
+from app.schemas.storage import FileInfo, FileInfoList, FileUpdate, FileUploadResponse
 
 __all__ = [
     "AuthMessageResponse",
@@ -34,14 +43,23 @@ __all__ = [
     "ConversationList",
     "ConversationResponse",
     "ConversationUpdate",
+    "DailyTokenUsage",
+    "DashboardResponse",
+    "DashboardStats",
     "ForgotPasswordRequest",
     "MessageList",
     "MessageSend",
+    "RecentActivityItem",
+    "RecentChatItem",
     "RefreshRequest",
     "ResetPasswordRequest",
     "StreamChunk",
     "TokenResponse",
+    "UsageResponse",
     "UserCreate",
+    "FileInfo",
+    "FileInfoList",
+    "FileUploadResponse",
     "UserLogin",
     "UserResponse",
     "UserUpdate",

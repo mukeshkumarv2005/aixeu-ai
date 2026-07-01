@@ -3,6 +3,8 @@ import { Routes, Route } from 'react-router-dom'
 import { HomePage } from '@/pages/home'
 import { AuthLayout } from '@/components/auth/auth-layout'
 import { ProtectedRoute } from '@/components/auth/protected-route'
+import { DashboardLayout } from '@/components/layout/DashboardLayout'
+import DashboardPage from '@/pages/dashboard/index'
 import LoginPage from '@/pages/auth/login'
 import RegisterPage from '@/pages/auth/register'
 import ForgotPasswordPage from '@/pages/auth/forgot-password'
@@ -36,11 +38,14 @@ export default function App() {
         <Route path="auth/verify-email-notice" element={<VerifyEmailPage />} />
       </Route>
 
-      {/* Protected routes */}
+      {/* Protected routes (dashboard layout) */}
       <Route element={<ProtectedRoute />}>
-        <Route path="profile" element={<ProfilePage />} />
-        <Route path="storage" element={<StoragePage />} />
-        <Route path="chat" element={<ChatPage />} />
+        <Route element={<DashboardLayout />}>
+          <Route path="dashboard" element={<DashboardPage />} />
+          <Route path="chat" element={<ChatPage />} />
+          <Route path="storage" element={<StoragePage />} />
+          <Route path="profile" element={<ProfilePage />} />
+        </Route>
       </Route>
     </Routes>
   )

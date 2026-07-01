@@ -36,6 +36,11 @@ class FileUploadResponse(BaseModel):
         description="Internal storage path for the file.",
         json_schema_extra={"example": "a1b2c3d4e5f6_report.pdf"},
     )
+    checksum: str | None = Field(
+        None,
+        description="SHA-256 hex digest of file content.",
+        json_schema_extra={"example": "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2"},
+    )
     created_at: datetime = Field(
         ...,
         description="Upload timestamp.",
@@ -73,6 +78,16 @@ class FileInfo(BaseModel):
         description="Internal storage path.",
         json_schema_extra={"example": "a1b2c3d4e5f6_report.pdf"},
     )
+    checksum: str | None = Field(
+        None,
+        description="SHA-256 hex digest of file content.",
+        json_schema_extra={"example": "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2"},
+    )
+    processing_status: str = Field(
+        "completed",
+        description="Processing status: pending, processing, completed, failed.",
+        json_schema_extra={"example": "completed"},
+    )
     is_temporary: bool = Field(
         ...,
         description="Whether the file is marked as temporary.",
@@ -87,6 +102,16 @@ class FileInfo(BaseModel):
         None,
         description="Last modification timestamp.",
         json_schema_extra={"example": "2026-07-01T14:30:00Z"},
+    )
+
+
+class FileUpdate(BaseModel):
+    """Schema for updating file metadata (PATCH /storage/{id})."""
+
+    filename: str | None = Field(
+        None,
+        description="New filename for the file.",
+        json_schema_extra={"example": "renamed-report.pdf"},
     )
 
 
