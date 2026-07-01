@@ -34,11 +34,14 @@ class Settings(BaseSettings):
         "http://localhost:3000",
         "http://localhost:5173",
     ]
+    BACKEND_CORS_ALLOW_CREDENTIALS: bool = True
 
     @field_validator("BACKEND_CORS_ORIGINS", mode="before")
     @classmethod
     def parse_cors_origins(cls, v: str | list[str]) -> list[str]:
         if isinstance(v, str):
+            if v.strip() == "*":
+                return ["*"]
             return [origin.strip() for origin in v.split(",") if origin.strip()]
         return v
 
@@ -57,10 +60,16 @@ class Settings(BaseSettings):
     ALGORITHM: str = "HS256"
     DEFAULT_ROLE: str = "user"
 
+    # ─── Rate Limiting (Auth) ──────────────────────────────────
+    AUTH_RATE_LIMIT_ENABLED: bool = True
+    AUTH_RATE_LIMIT_MAX_REQUESTS: int = 10
+    AUTH_RATE_LIMIT_WINDOW_SECONDS: int = 60
+
     # ─── Cookies (Refresh Token) ───────────────────────────────
     COOKIE_DOMAIN: str = ""
     REFRESH_TOKEN_COOKIE_NAME: str = "aevix_refresh"
     REFRESH_TOKEN_COOKIE_PATH: str = "/api/v1/auth"
+    REFRESH_TOKEN_CLEANUP_INTERVAL_MINUTES: int = 0  # 0 = disabled
 
     # ─── Email Verification ────────────────────────────────────
     VERIFICATION_TOKEN_EXPIRE_HOURS: int = 24

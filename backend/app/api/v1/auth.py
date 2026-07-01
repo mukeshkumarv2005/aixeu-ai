@@ -24,6 +24,7 @@ from app.api.deps import (
     get_current_user_optional,
 )
 from app.core.config import settings
+from app.core.rate_limiter import auth_rate_limit
 from app.core.security import (
     create_access_token,
     create_password_reset_token,
@@ -113,6 +114,7 @@ async def register(
     payload: UserCreate,
     db: DbSession,
     response: Response,
+    _: None = Depends(auth_rate_limit),
 ) -> AuthResponse:
     """Register a new user account.
 
@@ -151,6 +153,7 @@ async def login(
     payload: UserLogin,
     db: DbSession,
     response: Response,
+    _: None = Depends(auth_rate_limit),
 ) -> AuthResponse:
     """Authenticate a user by email or username.
 
@@ -367,6 +370,7 @@ async def change_password(
 async def forgot_password(
     payload: ForgotPasswordRequest,
     db: DbSession,
+    _: None = Depends(auth_rate_limit),
 ) -> MessageResponse:
     """Request a password-reset email (stub — logs to console in dev).
 
@@ -400,6 +404,7 @@ async def forgot_password(
 async def reset_password(
     payload: ResetPasswordRequest,
     db: DbSession,
+    _: None = Depends(auth_rate_limit),
 ) -> MessageResponse:
     """Reset a password using a valid reset token."""
     try:
