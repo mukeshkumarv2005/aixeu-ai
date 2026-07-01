@@ -48,5 +48,8 @@ htmlcov/
 *.db
 *.sqlite3
 
+# Uploaded storage
+backend/storage/
+
 # Vector stores
 chroma_data/

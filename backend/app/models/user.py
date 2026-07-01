@@ -51,10 +51,14 @@ class User(UUIDMixin, TimestampMixin, Base):
     refresh_tokens: Mapped[list[RefreshToken]] = relationship(
         "RefreshToken", back_populates="user", cascade="all, delete-orphan"
     )
+    files: Mapped[list[File]] = relationship(
+        "File", back_populates="user", cascade="all, delete-orphan"
+    )
 
     def __repr__(self) -> str:
         return f"<User id={self.id} email={self.email!r} role={self.role!r}>"
 
 
 # Avoid circular import at runtime
+from app.models.file import File  # noqa: E402, F811
 from app.models.refresh_token import RefreshToken  # noqa: E402, F811

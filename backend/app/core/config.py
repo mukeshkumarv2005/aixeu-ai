@@ -83,9 +83,9 @@ class Settings(BaseSettings):
     SMTP_FROM_EMAIL: str = "noreply@aevix.ai"
 
     # ─── File Storage ──────────────────────────────────────────
-    STORAGE_BACKEND: str = "local"
-    STORAGE_LOCAL_PATH: str = "./storage"
-    MAX_UPLOAD_SIZE_MB: int = 50
+    STORAGE_MAX_SIZE_MB: int = 50
+    STORAGE_UPLOAD_DIR: str = "./storage"
+    STORAGE_S3_BUCKET: str = ""
 
     # ─── AI ────────────────────────────────────────────────────
     AI_DEFAULT_PROVIDER: str = "openai"

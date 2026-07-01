@@ -49,13 +49,15 @@ async function request<T>(
   method: string,
   path: string,
   body?: unknown,
+  /** If true, body is sent as multipart/form-data (no JSON.stringify). */
+  isFormData?: boolean,
 ): Promise<T> {
   const baseUrl = '' // Vite proxy handles /api/v1 routing
   const url = `${baseUrl}/api/v1${path}`
 
   // Build headers
   const headers: Record<string, string> = {}
-  if (body !== undefined && !(body instanceof FormData)) {
+  if (body !== undefined && !isFormData) {
     headers['Content-Type'] = 'application/json'
   }
 
@@ -65,10 +67,16 @@ async function request<T>(
   }
 
   // Initial fetch
+  const requestBody =
+    body !== undefined
+      ? isFormData
+        ? (body as BodyInit)
+        : JSON.stringify(body)
+      : undefined
   let response = await fetch(url, {
     method,
     headers,
-    body: body !== undefined ? JSON.stringify(body) : undefined,
+    body: requestBody,
     credentials: 'include', // sends refresh-token cookie
   })
 
@@ -90,10 +98,16 @@ async function request<T>(
           headers['Authorization'] = `Bearer ${access_token}`
 
           // Retry original request
+          const retryBody =
+            body !== undefined
+              ? isFormData
+                ? (body as BodyInit)
+                : JSON.stringify(body)
+              : undefined
           response = await fetch(url, {
             method,
             headers,
-            body: body !== undefined ? JSON.stringify(body) : undefined,
+            body: retryBody,
             credentials: 'include',
           })
         } else {
@@ -118,10 +132,16 @@ async function request<T>(
       })
       if (newToken) {
         headers['Authorization'] = `Bearer ${newToken}`
+        const queueBody =
+          body !== undefined
+            ? isFormData
+              ? (body as BodyInit)
+              : JSON.stringify(body)
+            : undefined
         response = await fetch(url, {
           method,
           headers,
-          body: body !== undefined ? JSON.stringify(body) : undefined,
+          body: queueBody,
           credentials: 'include',
         })
       } else {
@@ -167,5 +187,9 @@ export const apiClient = {
   },
   delete<T>(path: string): Promise<T> {
     return request<T>('DELETE', path)
+  },
+  /** Upload a file as multipart/form-data. */
+  upload<T>(path: string, formData: FormData): Promise<T> {
+    return request<T>('POST', path, formData, true)
   },
 }

@@ -9,6 +9,7 @@ import ForgotPasswordPage from '@/pages/auth/forgot-password'
 import ResetPasswordPage from '@/pages/auth/reset-password'
 import VerifyEmailPage from '@/pages/auth/verify-email'
 import ProfilePage from '@/pages/profile/index'
+import StoragePage from '@/pages/storage/index'
 import { useAuthStore } from '@/stores/auth'
 
 export default function App() {
@@ -37,6 +38,7 @@ export default function App() {
       {/* Protected routes */}
       <Route element={<ProtectedRoute />}>
         <Route path="profile" element={<ProfilePage />} />
+        <Route path="storage" element={<StoragePage />} />
       </Route>
     </Routes>
   )
