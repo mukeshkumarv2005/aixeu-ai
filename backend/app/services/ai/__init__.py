@@ -10,6 +10,7 @@ from __future__ import annotations
 import json
 from abc import ABC, abstractmethod
 from collections.abc import AsyncGenerator
+from dataclasses import dataclass, field
 from typing import Any
 
 from app.core.config import settings
@@ -46,6 +47,25 @@ class StreamEvent:
         self.output_tokens = output_tokens
 
 
+@dataclass
+class ToolCall:
+    """A tool call requested by the AI model during chat completion."""
+
+    id: str
+    type: str = "function"
+    function: dict = field(default_factory=dict)
+
+
+@dataclass
+class ChatCompletionResult:
+    """Result of a non-streaming chat completion, possibly with tool calls."""
+
+    content: str | None = None
+    tool_calls: list[ToolCall] | None = None
+    input_tokens: int | None = None
+    output_tokens: int | None = None
+
+
 # ── Abstract provider ────────────────────────────────────────────────────────
 
 
@@ -73,6 +93,25 @@ class AIProvider(ABC):
     ) -> str:
         """Generate a short conversation title from the first user message."""
         ...
+
+    async def chat_completion(
+        self,
+        messages: list[dict[str, Any]],
+        tools: list[dict[str, Any]] | None = None,
+        model: str | None = None,
+        temperature: float | None = None,
+        max_tokens: int | None = None,
+    ) -> ChatCompletionResult:
+        """Non-streaming chat completion with optional tool calling.
+
+        Accepts messages in OpenAI-compatible format (list of dicts with
+        ``role``, ``content``, and optionally ``tool_calls`` / ``tool_call_id``).
+        Provider implementations handle format translation internally.
+
+        Default implementation raises ``NotImplementedError`` — providers
+        that support tool calling should override this.
+        """
+        raise NotImplementedError("Tool calling not supported by this provider")
 
 
 # ── OpenAI ───────────────────────────────────────────────────────────────────
@@ -139,6 +178,45 @@ class OpenAIProvider(AIProvider):
         )
         title = resp.choices[0].message.content or "New Chat"
         return title.strip(' "\'')
+
+    async def chat_completion(
+        self,
+        messages: list[dict[str, Any]],
+        tools: list[dict[str, Any]] | None = None,
+        model: str | None = None,
+        temperature: float | None = None,
+        max_tokens: int | None = None,
+    ) -> ChatCompletionResult:
+        model = model or settings.AI_DEFAULT_MODEL
+        kwargs: dict[str, Any] = {"model": model, "messages": messages}
+        if tools:
+            kwargs["tools"] = tools
+        if temperature is not None:
+            kwargs["temperature"] = temperature
+        if max_tokens is not None:
+            kwargs["max_tokens"] = max_tokens
+
+        response = await self._client.chat.completions.create(**kwargs)
+        choice = response.choices[0]
+        msg = choice.message
+
+        tool_calls: list[ToolCall] | None = None
+        if msg.tool_calls:
+            tool_calls = [
+                ToolCall(
+                    id=tc.id,
+                    type=tc.type,
+                    function={"name": tc.function.name, "arguments": tc.function.arguments},
+                )
+                for tc in msg.tool_calls
+            ]
+
+        return ChatCompletionResult(
+            content=msg.content,
+            tool_calls=tool_calls,
+            input_tokens=response.usage.input_tokens if response.usage else None,
+            output_tokens=response.usage.output_tokens if response.usage else None,
+        )
 
 
 # ── Anthropic ────────────────────────────────────────────────────────────────
@@ -218,6 +296,118 @@ class AnthropicProvider(AIProvider):
         title = resp.content[0].text if resp.content else "New Chat"
         return title.strip(' "\'')
 
+    async def chat_completion(
+        self,
+        messages: list[dict[str, Any]],
+        tools: list[dict[str, Any]] | None = None,
+        model: str | None = None,
+        temperature: float | None = None,
+        max_tokens: int | None = None,
+    ) -> ChatCompletionResult:
+        model = model or settings.AI_DEFAULT_MODEL
+
+        # Separate system message (Anthropic uses a dedicated param)
+        system_msg: str | None = None
+        anthropic_messages: list[dict[str, Any]] = []
+        tool_configs: list[dict[str, Any]] = []
+
+        for m in messages:
+            if m.get("role") == "system":
+                content = m.get("content", "")
+                if system_msg is None:
+                    system_msg = content
+                else:
+                    system_msg += "\n" + content
+            else:
+                # Convert OpenAI-format messages to Anthropic format
+                role = m["role"]
+                content = m.get("content", "")
+                msg: dict[str, Any] = {"role": role, "content": content}
+
+                # Handle tool call messages from the assistant
+                if role == "assistant" and "tool_calls" in m:
+                    # Anthropic needs tool_use content blocks
+                    blocks: list[dict[str, Any]] = []
+                    if content:
+                        blocks.append({"type": "text", "text": content})
+                    for tc in m["tool_calls"]:
+                        blocks.append({
+                            "type": "tool_use",
+                            "id": tc.get("id", ""),
+                            "name": tc.get("function", {}).get("name", ""),
+                            "input": json.loads(tc.get("function", {}).get("arguments", "{}")),
+                        })
+                    msg["content"] = blocks
+
+                # Handle tool result messages
+                if role == "tool":
+                    from anthropic.types import ContentBlockParam
+                    content_block: dict[str, Any] = {
+                        "type": "tool_result",
+                        "tool_use_id": m.get("tool_call_id", ""),
+                        "content": content,
+                    }
+                    msg["role"] = "user"
+                    msg["content"] = [content_block]
+
+                anthropic_messages.append(msg)
+
+        # Convert tool definitions to Anthropic format
+        if tools:
+            for t in tools:
+                fn = t.get("function", {})
+                tc: dict[str, Any] = {
+                    "name": fn.get("name", ""),
+                    "description": fn.get("description", ""),
+                    "input_schema": fn.get("parameters", {"type": "object", "properties": {}}),
+                }
+                tool_configs.append(tc)
+
+        kwargs: dict[str, Any] = {
+            "model": model,
+            "messages": anthropic_messages,
+            "max_tokens": max_tokens or settings.AI_MAX_TOKENS or 8192,
+        }
+        if system_msg:
+            kwargs["system"] = system_msg
+        if tool_configs:
+            kwargs["tools"] = tool_configs
+        if temperature is not None:
+            kwargs["temperature"] = temperature
+
+        response = await self._client.messages.create(**kwargs)
+
+        # Parse response content for text and tool_use blocks
+        text_content: str | None = None
+        tool_calls: list[ToolCall] | None = None
+
+        for block in response.content:
+            if block.type == "text":
+                if text_content is None:
+                    text_content = block.text
+                else:
+                    text_content += block.text
+            elif block.type == "tool_use":
+                if tool_calls is None:
+                    tool_calls = []
+                tool_calls.append(
+                    ToolCall(
+                        id=block.id,
+                        type="function",
+                        function={
+                            "name": block.name,
+                            "arguments": json.dumps(block.input if hasattr(block, "input") else {}),
+                        },
+                    )
+                )
+
+        return ChatCompletionResult(
+            content=text_content,
+            tool_calls=tool_calls,
+            input_tokens=response.usage.input_tokens if response.usage else None,
+            output_tokens=response.usage.output_tokens if response.usage else None,
+        )
+
 
 # ── Mock (for development / testing) ─────────────────────────────────────────
 
@@ -250,6 +440,27 @@ class MockAIProvider(AIProvider):
         model: str | None = None,
     ) -> str:
         return "Mock Chat"
+
+    async def chat_completion(
+        self,
+        messages: list[dict[str, Any]],
+        tools: list[dict[str, Any]] | None = None,
+        model: str | None = None,
+        temperature: float | None = None,
+        max_tokens: int | None = None,
+    ) -> ChatCompletionResult:
+        # Extract the last user message for a simple canned response
+        last_content = ""
+        for m in reversed(messages):
+            if m.get("role") == "user" and m.get("content"):
+                last_content = m["content"]
+                break
+
+        return ChatCompletionResult(
+            content=f"This is a mock response to: {last_content[:100]}",
+            input_tokens=sum(len(str(m.get("content", ""))) for m in messages) // 4,
+            output_tokens=20,
+        )
 
 
 # ── Factory ──────────────────────────────────────────────────────────────────

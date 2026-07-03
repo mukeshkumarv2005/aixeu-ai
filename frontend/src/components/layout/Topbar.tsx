@@ -11,11 +11,12 @@ import {
   Bell,
   LogOut,
   User,
+  Settings,
   ChevronDown,
 } from 'lucide-react'
-import { cn } from '@/lib/utils'
 import { useAuthStore } from '@/stores/auth'
 import { useThemeStore } from '@/stores/theme'
+import { SearchBar } from '@/components/search/SearchBar'
 
 // ---------------------------------------------------------------------------
 // Route → page title mapping
@@ -23,9 +24,18 @@ import { useThemeStore } from '@/stores/theme'
 
 const ROUTE_TITLES: Record<string, string> = {
   '/dashboard': 'Dashboard',
+  '/search': 'Search',
   '/chat': 'Chat',
   '/storage': 'File Storage',
+  '/knowledge': 'Knowledge Base',
+  '/tasks': 'Tasks',
   '/profile': 'Profile',
+  '/settings': 'Settings',
+  '/settings/appearance': 'Appearance',
+  '/settings/workspace': 'Workspace',
+  '/settings/providers': 'AI Providers',
+  '/settings/notifications': 'Notifications',
+  '/settings/security': 'Security',
 }
 
 // ---------------------------------------------------------------------------
@@ -94,6 +104,17 @@ export function Topbar({ onMenuToggle }: TopbarProps) {
         </h1>
       </div>
 
+      {/* ── Center: global search (hidden on search page) ────── */}
+      {location.pathname !== '/search' && (
+        <div className="hidden flex-1 px-4 md:block lg:max-w-md xl:max-w-lg">
+          <SearchBar
+            navigateOnEnter
+            placeholder="Search…"
+            onResultSelect={() => {}}
+          />
+        </div>
+      )}
+
       {/* ── Right: actions ──────────────────────────────────── */}
       <div className="flex items-center gap-2">
         {/* Theme toggle */}
@@ -157,6 +178,16 @@ export function Topbar({ onMenuToggle }: TopbarProps) {
                 >
                   <User size={15} />
                   Profile
+                </button>
+                <button
+                  onClick={() => {
+                    setProfileOpen(false)
+                    navigate('/settings')
+                  }}
+                  className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-surface-700 hover:bg-surface-100 dark:text-surface-300 dark:hover:bg-surface-800"
+                >
+                  <Settings size={15} />
+                  Settings
                 </button>
                 <button
                   onClick={() => setTheme(nextTheme)}

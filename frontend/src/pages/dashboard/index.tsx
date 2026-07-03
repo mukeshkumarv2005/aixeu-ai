@@ -10,17 +10,28 @@ import {
   BrainCircuit,
   Layers,
   Sparkles,
+  ListChecks,
+  Bot,
   RefreshCw,
   AlertCircle,
   LayoutDashboard,
 } from 'lucide-react'
 import { useDashboard, useUsage } from '@/api/dashboard'
+import { useTaskStats, useTasks, useOverdueTasks } from '@/api/tasks'
+import { useAgents } from '@/api/agents'
 import { StatCard } from './StatCard'
 import { RecentChats } from './RecentChats'
 import { RecentDocuments } from './RecentDocuments'
+import { RecentTasks } from './RecentTasks'
+import { OverdueTasksAlert } from './OverdueTasksAlert'
 import { ActivityFeed } from './ActivityFeed'
 import { UsageWidget } from './UsageWidget'
 import { QuickActions } from './QuickActions'
+import { AISuggestionsWidget } from './AISuggestionsWidget'
+import { AISummaryWidget } from './AISummaryWidget'
+import { AgentStatusWidget } from '@/components/dashboard/AgentStatusWidget'
+import { RecentAgentRunsWidget } from '@/components/dashboard/RecentAgentRunsWidget'
+import { QuickExecuteWidget } from '@/components/dashboard/QuickExecuteWidget'
 
 export default function DashboardPage() {
   const {
@@ -36,15 +47,37 @@ export default function DashboardPage() {
     refetch: refetchUsage,
   } = useUsage()
 
+  const {
+    data: taskStats,
+    isLoading: taskStatsLoading,
+    isError: _taskStatsError,
+  } = useTaskStats()
+
+  const {
+    data: recentTasksData,
+    isLoading: recentTasksLoading,
+    isError: recentTasksError,
+  } = useTasks({ limit: 5 })
+
+  const {
+    data: overdueData,
+    isLoading: overdueLoading,
+    isError: overdueError,
+  } = useOverdueTasks(10)
+
   const hasError = !!dashError || !!usageError
   const isLoading = dashLoading || usageLoading
+
+  // Show welcome state only when the workspace is genuinely empty
   const isEmpty =
     !isLoading &&
     !hasError &&
     dashData &&
     dashData.stats.total_conversations === 0 &&
     dashData.stats.total_messages === 0 &&
-    dashData.stats.total_files === 0
+    dashData.stats.total_files === 0 &&
+    !taskStatsLoading &&
+    (taskStats?.total ?? 0) === 0
 
   const handleRetry = () => {
     refetchDash()
@@ -119,6 +152,25 @@ export default function DashboardPage() {
             loading={isLoading}
           />
           <StatCard
+            icon={ListChecks}
+            label="Total Tasks"
+            value={taskStats?.total ?? '-'}
+            color="primary"
+            loading={taskStatsLoading}
+          />
+          <StatCard
+            icon={AlertCircle}
+            label="Overdue"
+            value={taskStats?.overdue ?? '-'}
+            subtext={
+              taskStats?.overdue && taskStats.overdue > 0
+                ? 'Requires attention'
+                : undefined
+            }
+            color="amber"
+            loading={taskStatsLoading}
+          />
+          <StatCard
             icon={FileText}
             label="Files"
             value={dashData?.stats.total_files ?? '-'}
@@ -179,8 +231,41 @@ export default function DashboardPage() {
             color="green"
             loading={isLoading}
           />
+          <AgentStatCard />
         </div>
       </section>
+
+      {/* ── Overdue tasks alert ─────────────────────────────────── */}
+      {!overdueLoading && !overdueError && taskStats && taskStats.overdue > 0 && (
+        <OverdueTasksAlert
+          tasks={overdueData?.items ?? []}
+          loading={overdueLoading}
+          error={overdueError ? 'Failed to load overdue tasks' : null}
+          total={taskStats.overdue}
+        />
+      )}
+
+      {/* ── AI-predicted widgets ──────────────────────────────────── */}
+      {!isEmpty && !hasError && (
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+          <AISuggestionsWidget />
+          <AISummaryWidget />
+        </div>
+      )}
+
+      {/* ── Agent widgets ──────────────────────────────────────────── */}
+      {!hasError && (
+        <section className="space-y-6">
+          <h2 className="text-base font-semibold text-surface-900 dark:text-white">
+            AI Agents
+          </h2>
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+            <AgentStatusWidget />
+            <RecentAgentRunsWidget />
+            <QuickExecuteWidget />
+          </div>
+        </section>
+      )}
 
       {/* ── Empty state — new user ──────────────────────────────── */}
       {isEmpty && (
@@ -194,7 +279,7 @@ export default function DashboardPage() {
               Welcome to Aevix!
             </p>
             <p className="mt-1 text-sm text-surface-500">
-              Start a conversation or upload a file to see your activity here.
+              Start a conversation, upload a file, or create a task to see your activity here.
             </p>
           </div>
           <QuickActions />
@@ -207,50 +292,69 @@ export default function DashboardPage() {
           {/* Quick actions */}
           <QuickActions />
 
-          {/* Two-column: recent chats + recent docs */}
+          {/* Two-column: recent chats + recent tasks */}
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
             <RecentChats
               chats={dashData?.recent_chats ?? []}
               loading={dashLoading}
-              error={
-                dashError instanceof Error ? dashError.message : null
-              }
+              error={null}
             />
-            <RecentDocuments
-              files={dashData?.recent_files ?? []}
-              loading={dashLoading}
+            <RecentTasks
+              tasks={recentTasksData?.items ?? []}
+              loading={recentTasksLoading}
               error={
-                dashError instanceof Error ? dashError.message : null
+                recentTasksError ? 'Failed to load recent tasks' : null
               }
             />
           </div>
 
-          {/* Two-column: activity + usage */}
+          {/* Two-column: recent docs + activity + usage */}
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+            <RecentDocuments
+              files={dashData?.recent_files ?? []}
+              loading={dashLoading}
+              error={null}
+            />
             <ActivityFeed
               items={dashData?.recent_activity ?? []}
               loading={dashLoading}
-              error={
-                dashError instanceof Error ? dashError.message : null
-              }
-            />
-            <UsageWidget
-              totalInputTokens={usageData?.total_input_tokens ?? 0}
-              totalOutputTokens={usageData?.total_output_tokens ?? 0}
-              totalMessages={usageData?.total_messages ?? 0}
-              totalConversations={usageData?.total_conversations ?? 0}
-              storageTotalBytes={usageData?.storage_total_bytes ?? 0}
-              storageTotalFiles={usageData?.storage_total_files ?? 0}
-              dailyUsage={usageData?.daily_usage ?? []}
-              loading={usageLoading}
-              error={
-                usageError instanceof Error ? usageError.message : null
-              }
-            />
-          </div>
+              error={null}
+              />
+            </div>
+
+          {/* Usage widget spans full width on smaller screens */}
+          <UsageWidget
+            totalInputTokens={usageData?.total_input_tokens ?? 0}
+            totalOutputTokens={usageData?.total_output_tokens ?? 0}
+            totalMessages={usageData?.total_messages ?? 0}
+            totalConversations={usageData?.total_conversations ?? 0}
+            storageTotalBytes={usageData?.storage_total_bytes ?? 0}
+            storageTotalFiles={usageData?.storage_total_files ?? 0}
+            dailyUsage={usageData?.daily_usage ?? []}
+            loading={usageLoading}
+            error={null}
+          />
         </div>
       )}
     </div>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// Agent stat card (rendered in the stats grid)
+// ---------------------------------------------------------------------------
+
+function AgentStatCard() {
+  const { data, isLoading } = useAgents({ limit: 1 })
+
+  return (
+    <StatCard
+      icon={Bot}
+      label="Agents"
+      value={data?.total ?? '-'}
+      color="primary"
+      loading={isLoading}
+    />
   )
 }
 
@@ -267,6 +371,6 @@ function formatTokens(n: number): string {
 function formatBytes(bytes: number): string {
   if (bytes === 0) return '0 B'
   const units = ['B', 'KB', 'MB', 'GB']
-  const i = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1)
+  const i = Math.min(Math.floor(Math.log(bytes) / Math.log(1022)), units.length - 1)
   return `${(bytes / Math.pow(1024, i)).toFixed(i === 0 ? 0 : 1)} ${units[i]}`
 }

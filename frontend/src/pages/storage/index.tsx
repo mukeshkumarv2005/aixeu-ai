@@ -20,7 +20,6 @@ import {
   X,
   Image,
   FileSpreadsheet,
-  FileCode,
   Presentation,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -48,15 +47,6 @@ interface FileInfoList {
   total: number
 }
 
-interface FileUploadResponse {
-  id: string
-  filename: string
-  mime_type: string
-  size_bytes: number
-  storage_path: string
-  checksum?: string | null
-  created_at: string
-}
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -181,7 +171,6 @@ export default function StoragePage() {
   const [uploadProgress, setUploadProgress] = useState<number | null>(null)
   const [uploadStatus, setUploadStatus] = useState<'idle' | 'uploading' | 'done' | 'error'>('idle')
   const [error, setError] = useState<string | null>(null)
-  const [deleteId, setDeleteId] = useState<string | null>(null)
   const [dragOver, setDragOver] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 

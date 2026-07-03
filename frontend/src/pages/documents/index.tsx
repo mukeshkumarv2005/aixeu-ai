@@ -11,6 +11,7 @@ import {
   BookOpen,
   BrainCircuit,
   ListChecks,
+  ListTodo,
   Hash,
   Languages,
   User,
@@ -36,7 +37,9 @@ import {
   useDocumentAnalysis,
   useProcessDocument,
 } from '@/api/documents'
+import { useAIConvertDocument } from '@/api/task-ai'
 import { cn } from '@/lib/utils'
+import { RelatedTasksWidget } from '@/components/tasks/RelatedTasksWidget'
 
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString(undefined, {
@@ -84,6 +87,8 @@ export default function DocumentDetailsPage() {
   } = useDocumentChunks(fileId ?? '', chunkOffset, CHUNK_LIMIT)
 
   const processMutation = useProcessDocument(fileId ?? '')
+  const convertMutation = useAIConvertDocument()
+  const [convertError, setConvertError] = useState<string | null>(null)
 
   // ── Derived ────────────────────────────────────────────────────────────
   const isLoading = statusLoading || metadataLoading || analysisLoading || chunksLoading
@@ -91,6 +96,17 @@ export default function DocumentDetailsPage() {
   const isCompleted = status?.processing_status === 'completed'
   const isFailed = status?.processing_status === 'failed'
   const hasData = metadata || analysis || (chunks && chunks.total > 0)
+
+  // ── Convert-to-task handler ────────────────────────────────────────────
+  const handleConvertToTask = async () => {
+    setConvertError(null)
+    try {
+      const res = await convertMutation.mutateAsync({ document_id: fileId ?? '' })
+      navigate('/tasks/create', { state: { draftFromConvert: res.task } })
+    } catch (err: any) {
+      setConvertError(err?.message ?? 'Failed to convert to task.')
+    }
+  }
 
   // ── Error state ───────────────────────────────────────────────────────
   if (statusError && !statusLoading) {
@@ -180,7 +196,29 @@ export default function DocumentDetailsPage() {
             Not Processed
           </div>
         )}
+
+        {/* Convert to Task */}
+        <button
+          onClick={handleConvertToTask}
+          disabled={convertMutation.isPending}
+          className="flex items-center gap-2 rounded-lg border border-primary-200 bg-primary-50 px-3 py-2 text-sm font-medium text-primary-700 hover:bg-primary-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-primary-900/30 dark:bg-primary-900/20 dark:text-primary-400 dark:hover:bg-primary-900/30 transition-colors"
+        >
+          {convertMutation.isPending ? (
+            <Loader2 size={14} className="animate-spin" />
+          ) : (
+            <ListTodo size={14} />
+          )}
+          {convertMutation.isPending ? 'Converting…' : 'Convert to Task'}
+        </button>
       </div>
+
+      {/* Convert error */}
+      {convertError && (
+        <div className="mb-4 flex items-center gap-2 text-sm text-red-500">
+          <AlertCircle size={14} />
+          {convertError}
+        </div>
+      )}
 
       {/* ── Processing status & actions ──────────────────────────── */}
       <div className="mb-6 rounded-xl border border-surface-200 bg-white p-5 dark:border-surface-800 dark:bg-surface-950">
@@ -437,6 +475,13 @@ export default function DocumentDetailsPage() {
               </div>
             )}
           </div>
+        </section>
+      )}
+
+      {/* ── Related Tasks Widget ──────────────────────────────────── */}
+      {fileId && (
+        <section className="mb-6">
+          <RelatedTasksWidget uploadedDocumentId={fileId} />
         </section>
       )}
 

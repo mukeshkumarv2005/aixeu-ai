@@ -22,9 +22,11 @@ import {
   Zap,
   Clock,
   Hash,
-  RefreshCw,
+  ListTodo,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { RelatedTasksWidget } from '@/components/tasks/RelatedTasksWidget'
+import { useAIConvertDocument } from '@/api/task-ai'
 import {
   useKnowledgeBase,
   useKbDocuments,
@@ -35,7 +37,6 @@ import {
 } from '@/api/knowledge'
 import type {
   KnowledgeBaseDocumentResponse,
-  SemanticSearchResult,
 } from '@/types/knowledge'
 
 type ActiveTab = 'documents' | 'search'
@@ -71,10 +72,12 @@ export default function KnowledgeBaseDetailPage() {
   const deleteDocMutation = useDeleteKbDocument(kbId ?? '')
   const processDocMutation = useProcessKbDocument(kbId ?? '')
   const searchMutation = useSemanticSearch(kbId ?? '')
+  const convertMutation = useAIConvertDocument()
 
   // ── Local state ──────────────────────────────────────────────────────
   const [activeTab, setActiveTab] = useState<ActiveTab>('documents')
   const [showAddDoc, setShowAddDoc] = useState(false)
+  const [convertError, setConvertError] = useState<string | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<KnowledgeBaseDocumentResponse | null>(null)
 
   // Add document form
@@ -165,6 +168,20 @@ export default function KnowledgeBaseDetailPage() {
     })
   }
 
+  const handleConvertToTask = async () => {
+    setConvertError(null)
+    try {
+      const res = await convertMutation.mutateAsync({
+        document_id: kbId ?? '',
+      })
+      navigate('/tasks/create', {
+        state: { draftFromConvert: res.task },
+      })
+    } catch (err: any) {
+      setConvertError(err?.message ?? 'Failed to convert to task.')
+    }
+  }
+
   const documents = docsData?.items ?? []
   const searchResults = searchMutation.data?.results ?? []
 
@@ -175,6 +192,7 @@ export default function KnowledgeBaseDetailPage() {
   ]
 
   return (
+    <>
     <div className="mx-auto max-w-6xl px-4 py-6">
       {/* ── Back link ──────────────────────────────────────────────── */}
       <button
@@ -201,6 +219,29 @@ export default function KnowledgeBaseDetailPage() {
               )}
             </div>
           </div>
+
+          {/* Convert to Task */}
+          <button
+            onClick={handleConvertToTask}
+            disabled={convertMutation.isPending}
+            className="flex items-center gap-2 rounded-lg border border-primary-200 bg-primary-50 px-3 py-2 text-sm font-medium text-primary-700 hover:bg-primary-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-primary-900/30 dark:bg-primary-900/20 dark:text-primary-400 dark:hover:bg-primary-900/30 transition-colors"
+          >
+            {convertMutation.isPending ? (
+              <Loader2 size={14} className="animate-spin" />
+            ) : (
+              <ListTodo size={14} />
+            )}
+            {convertMutation.isPending ? 'Converting…' : 'Convert to Task'}
+          </button>
+        </div>
+
+        {/* Convert error */}
+        {convertError && (
+          <div className="mt-3 flex items-center gap-2 text-sm text-red-500">
+            <AlertCircle size={14} />
+            {convertError}
+          </div>
+        )}
         </div>
 
         {/* Stats row */}
@@ -233,6 +274,13 @@ export default function KnowledgeBaseDetailPage() {
           </div>
         </div>
       </div>
+
+      {/* ── Related Tasks Widget ────────────────────────────────────── */}
+      {kbId && (
+        <div className="mb-4">
+          <RelatedTasksWidget kbDocumentId={kbId} />
+        </div>
+      )}
 
       {/* ── Tabs ───────────────────────────────────────────────────── */}
       <div className="mb-4 flex gap-1 rounded-lg bg-surface-100 p-1 dark:bg-surface-800">
@@ -512,7 +560,7 @@ export default function KnowledgeBaseDetailPage() {
 
               {/* Results list */}
               <div className="space-y-3">
-                {searchResults.map((result, i) => (
+                {searchResults.map((result, _i) => (
                   <div
                     key={`${result.document_id}-${result.chunk_index}`}
                     className="rounded-xl border border-surface-200 bg-white p-4 dark:border-surface-800 dark:bg-surface-950"
@@ -673,6 +721,6 @@ export default function KnowledgeBaseDetailPage() {
           </div>
         </div>
       )}
-    </div>
+    </>
   )
 }

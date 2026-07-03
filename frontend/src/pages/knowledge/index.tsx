@@ -19,7 +19,6 @@ import {
   FileText,
   Cpu,
 } from 'lucide-react'
-import { cn } from '@/lib/utils'
 import {
   useKnowledgeBases,
   useCreateKnowledgeBase,

@@ -16,6 +16,19 @@ import DocumentDetailsPage from '@/pages/documents/index'
 import ChatPage from '@/pages/chat/index'
 import KnowledgeBasePage from '@/pages/knowledge/index'
 import KnowledgeBaseDetailPage from '@/pages/knowledge/detail'
+import TasksPage from '@/pages/tasks/index'
+import TaskDetailPage from '@/pages/tasks/detail'
+import TaskCreatePage from '@/pages/tasks/create'
+import SearchPage from '@/pages/search/index'
+import AgentsPage from '@/pages/agents/index'
+import AgentCreatePage from '@/pages/agents/new'
+import AgentDetailPage from '@/pages/agents/detail'
+import SettingsLayout from '@/pages/settings/index'
+import AppearanceSettings from '@/pages/settings/AppearanceSettings'
+import WorkspaceSettings from '@/pages/settings/WorkspaceSettings'
+import AiProviders from '@/pages/settings/AiProviders'
+import NotificationSettings from '@/pages/settings/NotificationSettings'
+import SecuritySettings from '@/pages/settings/SecuritySettings'
 import { useAuthStore } from '@/stores/auth'
 
 export default function App() {
@@ -50,7 +63,22 @@ export default function App() {
           <Route path="storage/:fileId/documents" element={<DocumentDetailsPage />} />
           <Route path="knowledge" element={<KnowledgeBasePage />} />
           <Route path="knowledge/:kbId" element={<KnowledgeBaseDetailPage />} />
+          <Route path="tasks" element={<TasksPage />} />
+          <Route path="tasks/new" element={<TaskCreatePage />} />
+          <Route path="tasks/:taskId" element={<TaskDetailPage />} />
+          <Route path="search" element={<SearchPage />} />
+          <Route path="agents" element={<AgentsPage />} />
+          <Route path="agents/new" element={<AgentCreatePage />} />
+          <Route path="agents/:agentId" element={<AgentDetailPage />} />
           <Route path="profile" element={<ProfilePage />} />
+          <Route path="settings" element={<SettingsLayout />}>
+            <Route index element={<AppearanceSettings />} />
+            <Route path="appearance" element={<AppearanceSettings />} />
+            <Route path="workspace" element={<WorkspaceSettings />} />
+            <Route path="providers" element={<AiProviders />} />
+            <Route path="notifications" element={<NotificationSettings />} />
+            <Route path="security" element={<SecuritySettings />} />
+          </Route>
         </Route>
       </Route>
     </Routes>

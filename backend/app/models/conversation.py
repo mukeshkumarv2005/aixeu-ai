@@ -44,6 +44,10 @@ class Conversation(UUIDMixin, TimestampMixin, Base):
         cascade="all, delete-orphan",
         order_by="Message.created_at",
     )
+    tasks: Mapped[list[Task]] = relationship(
+        "Task",
+        back_populates="chat_conversation",
+    )
 
     def __repr__(self) -> str:
         return f"<Conversation {self.id} title={self.title!r}>"

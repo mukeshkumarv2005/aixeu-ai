@@ -7,10 +7,13 @@ configurable expiry.
 
 from __future__ import annotations
 
+import base64
+import hashlib
 import uuid
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
+from cryptography.fernet import Fernet
 from fastapi import Response
 from jose import JWTError, jwt
 from passlib.context import CryptContext
@@ -157,3 +160,29 @@ def unset_refresh_token_cookie(response: Response) -> None:
         path=settings.REFRESH_TOKEN_COOKIE_PATH,
         domain=settings.COOKIE_DOMAIN or None,
     )
+
+
+# ─── API Key Encryption ──────────────────────────────────────────────────
+
+
+def _get_fernet() -> Fernet:
+    """Return a Fernet instance keyed from the app's SECRET_KEY."""
+    key = base64.urlsafe_b64encode(hashlib.sha256(settings.SECRET_KEY.encode()).digest())
+    return Fernet(key)
+
+
+def encrypt_api_key(plaintext: str) -> str:
+    """Encrypt an API key string using Fernet symmetric encryption."""
+    return _get_fernet().encrypt(plaintext.encode()).decode()
+
+
+def decrypt_api_key(ciphertext: str) -> str:
+    """Decrypt a Fernet-encrypted API key string."""
+    return _get_fernet().decrypt(ciphertext.encode()).decode()
+
+
+def mask_api_key(key: str) -> str:
+    """Return sk-****abcd — first 3 + last 4 chars."""
+    if len(key) <= 7:
+        return "****"
+    return key[:3] + "****" + key[-4:]

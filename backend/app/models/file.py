@@ -93,6 +93,10 @@ class File(UUIDMixin, TimestampMixin, Base):
         back_populates="file",
         cascade="all, delete-orphan",
     )
+    tasks: Mapped[list[Task]] = relationship(
+        "Task",
+        back_populates="uploaded_document",
+    )
 
     def __repr__(self) -> str:
         return (
@@ -104,4 +108,5 @@ class File(UUIDMixin, TimestampMixin, Base):
 # Avoid circular import at runtime
 from app.models.document import DocumentMetadata, DocumentChunk, DocumentAnalysis  # noqa: E402, F811
 from app.models.knowledge import KnowledgeBaseDocument  # noqa: E402, F811
+from app.models.task import Task  # noqa: E402, F811
 from app.models.user import User  # noqa: E402, F811

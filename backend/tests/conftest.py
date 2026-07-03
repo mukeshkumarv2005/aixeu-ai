@@ -12,11 +12,19 @@ import pytest_asyncio
 from fastapi import FastAPI
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy import NullPool
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.ext.asyncio import (
     AsyncSession,
     async_sessionmaker,
     create_async_engine,
 )
+from sqlalchemy.ext.compiler import compiles
+
+# Allow PostgreSQL-specific JSONB to work with SQLite in tests.
+# SQLAlchemy's generic JSON maps to TEXT on SQLite, which is what we want.
+@compiles(JSONB, "sqlite")
+def _compile_jsonb_sqlite(type_, compiler, **kw):  # noqa: ARG001
+    return "JSON"
 
 from app.api.deps import get_db
 from app.core.security import (

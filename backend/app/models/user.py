@@ -38,6 +38,17 @@ class User(UUIDMixin, TimestampMixin, Base):
     # ── Account State ────────────────────────────────────────────
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     is_verified: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    two_factor_enabled: Mapped[bool] = mapped_column(
+        Boolean, default=False, nullable=False,
+        comment="Whether two-factor authentication is enabled (reserved for future use)",
+    )
+
+    # ── Login Tracking ────────────────────────────────────────────
+    last_login_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+        comment="Timestamp of the most recent successful login",
+    )
 
     # ── Email Verification ───────────────────────────────────────
     verification_token_hash: Mapped[str | None] = mapped_column(
@@ -65,6 +76,47 @@ class User(UUIDMixin, TimestampMixin, Base):
         back_populates="user",
         cascade="all, delete-orphan",
     )
+    settings: Mapped[UserSettings] = relationship(
+        "UserSettings",
+        back_populates="user",
+        uselist=False,
+        cascade="all, delete-orphan",
+    )
+    api_provider_configs: Mapped[list[ApiProviderConfig]] = relationship(
+        "ApiProviderConfig",
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
+    sessions: Mapped[list[UserSession]] = relationship(
+        "UserSession",
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
+    tasks: Mapped[list[Task]] = relationship(
+        "Task",
+        back_populates="owner",
+        cascade="all, delete-orphan",
+    )
+    agents: Mapped[list[Agent]] = relationship(
+        "Agent",
+        back_populates="owner",
+        cascade="all, delete-orphan",
+    )
+    agent_templates: Mapped[list[AgentTemplate]] = relationship(
+        "AgentTemplate",
+        back_populates="owner",
+        cascade="all, delete-orphan",
+    )
+    saved_searches: Mapped[list[SavedSearch]] = relationship(
+        "SavedSearch",
+        back_populates="owner",
+        cascade="all, delete-orphan",
+    )
+    recent_searches: Mapped[list[RecentSearch]] = relationship(
+        "RecentSearch",
+        back_populates="owner",
+        cascade="all, delete-orphan",
+    )
 
     def __repr__(self) -> str:
         return f"<User id={self.id} email={self.email!r} role={self.role!r}>"
@@ -75,3 +127,7 @@ from app.models.conversation import Conversation  # noqa: E402, F811
 from app.models.file import File  # noqa: E402, F811
 from app.models.knowledge import KnowledgeBase  # noqa: E402, F811
 from app.models.refresh_token import RefreshToken  # noqa: E402, F811
+from app.models.task import Task  # noqa: E402, F811
+from app.models.agent import Agent, AgentTemplate  # noqa: E402, F811
+from app.models.search import SavedSearch, RecentSearch  # noqa: E402, F811
+from app.models.settings import UserSettings, ApiProviderConfig, UserSession  # noqa: E402, F811

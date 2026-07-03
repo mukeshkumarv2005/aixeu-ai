@@ -5,6 +5,7 @@ Covers all states: loading, error, empty, streaming, and edge cases.
 */
 
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import {
   MessageSquare,
   Plus,
@@ -16,6 +17,7 @@ import {
   PanelLeftClose,
   Bot,
   Sparkles,
+  ListTodo,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAuthStore } from '@/stores/auth'
@@ -23,6 +25,8 @@ import { useChatStore, useIsStreaming, useActiveMessages } from '@/stores/chat'
 import { useKnowledgeBases } from '@/api/knowledge'
 import { MarkdownRenderer } from '@/components/chat/markdown'
 import type { ConversationResponse } from '@/stores/chat'
+import { RelatedTasksWidget } from '@/components/tasks/RelatedTasksWidget'
+import { useAIConvertChat } from '@/api/task-ai'
 
 export default function ChatPage() {
   // ── Store state ───────────────────────────────────────────────────────────
@@ -46,6 +50,7 @@ export default function ChatPage() {
   const user = useAuthStore((s) => s.user)
 
   // ── Local state ───────────────────────────────────────────────────────────
+  const navigate = useNavigate()
   const [input, setInput] = useState('')
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [isAtBottom, setIsAtBottom] = useState(true)
@@ -55,6 +60,8 @@ export default function ChatPage() {
   // ── Knowledge bases for RAG ──────────────────────────────────────────────
   const { data: kbData } = useKnowledgeBases(0, 50)
   const knowledgeBases = kbData?.items ?? []
+  const convertMutation = useAIConvertChat()
+  const [convertError, setConvertError] = useState<string | null>(null)
 
   // ── Refs ──────────────────────────────────────────────────────────────────
   const messagesEndRef = useRef<HTMLDivElement>(null)
@@ -145,6 +152,20 @@ export default function ChatPage() {
     },
     [handleSend],
   )
+
+  // ── Convert chat to task ─────────────────────────────────────────────────
+  const handleConvertToTask = useCallback(async () => {
+    if (!currentConversationId) return
+    setConvertError(null)
+    try {
+      const res = await convertMutation.mutateAsync({
+        conversation_id: currentConversationId,
+      })
+      navigate('/tasks/create', { state: { draftFromConvert: res.task } })
+    } catch (err: any) {
+      setConvertError(err?.message ?? 'Failed to convert to task.')
+    }
+  }, [currentConversationId, convertMutation, navigate])
 
   // ── Sidebar items helper ─────────────────────────────────────────────────
   const formatDate = (iso: string | null) => {
@@ -358,6 +379,13 @@ export default function ChatPage() {
           </ul>
         )}
       </div>
+
+      {/* Related Tasks — shown only when a conversation is active */}
+      {currentConversationId && (
+        <div className="border-t border-surface-200 p-3 dark:border-surface-800">
+          <RelatedTasksWidget chatConversationId={currentConversationId} maxTasks={3} />
+        </div>
+      )}
     </aside>
   )
 
@@ -386,6 +414,7 @@ export default function ChatPage() {
       <div className="flex flex-1 flex-col">
         {/* Messages header */}
         {currentConversationId && (
+          <>
           <div className="flex items-center justify-between border-b border-surface-200 bg-white px-4 py-2 dark:border-surface-800 dark:bg-surface-950">
             <div className="flex items-center">
               <Bot size={18} className="mr-2 text-primary-500" />
@@ -417,8 +446,30 @@ export default function ChatPage() {
                 ))}
               </select>
             )}
+
+            {/* Convert to Task */}
+            <button
+              onClick={handleConvertToTask}
+              disabled={convertMutation.isPending}
+              className="flex items-center gap-2 rounded-lg border border-primary-200 bg-primary-50 px-3 py-1.5 text-xs font-medium text-primary-700 hover:bg-primary-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-primary-900/30 dark:bg-primary-900/20 dark:text-primary-400 dark:hover:bg-primary-900/30 transition-colors"
+            >
+              {convertMutation.isPending ? (
+                <Loader2 size={12} className="animate-spin" />
+              ) : (
+                <ListTodo size={12} />
+              )}
+              {convertMutation.isPending ? 'Converting…' : 'Task'}
+            </button>
           </div>
-        )}
+
+          {/* Convert error */}
+          {convertError && (
+            <div className="flex items-center gap-2 border-b border-surface-200 bg-red-50 px-4 py-2 text-xs text-red-600 dark:border-surface-800 dark:bg-red-900/10 dark:text-red-400">
+              <AlertCircle size={12} />
+              {convertError}
+            </div>
+          )}
+        </>)}
 
         {/* Messages area */}
         <div

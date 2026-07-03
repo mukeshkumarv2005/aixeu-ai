@@ -11,6 +11,9 @@ import {
   Database,
   Brain,
   User,
+  CheckSquare,
+  Search,
+  Settings,
   ChevronLeft,
   ChevronRight,
 } from 'lucide-react'
@@ -22,10 +25,13 @@ import { cn } from '@/lib/utils'
 
 const NAV_ITEMS = [
   { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { to: '/search', label: 'Search', icon: Search },
   { to: '/chat', label: 'Chat', icon: MessageSquare },
   { to: '/storage', label: 'Storage', icon: Database },
   { to: '/knowledge', label: 'Knowledge', icon: Brain },
+  { to: '/tasks', label: 'Tasks', icon: CheckSquare },
   { to: '/profile', label: 'Profile', icon: User },
+  { to: '/settings', label: 'Settings', icon: Settings },
 ] as const
 
 // ---------------------------------------------------------------------------

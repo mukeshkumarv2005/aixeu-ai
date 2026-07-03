@@ -174,6 +174,10 @@ class KnowledgeBaseDocument(UUIDMixin, TimestampMixin, Base):
         back_populates="kb_document",
         cascade="all, delete-orphan",
     )
+    tasks: Mapped[list[Task]] = relationship(
+        "Task",
+        back_populates="kb_document",
+    )
 
     def __repr__(self) -> str:
         return (
@@ -257,4 +261,5 @@ if HAS_PGVECTOR:
 
 # ── Late imports (avoid circular dependencies) ───────────────────────────────
 from app.models.file import File  # noqa: E402, F811
+from app.models.task import Task  # noqa: E402, F811
 from app.models.user import User  # noqa: E402, F811
