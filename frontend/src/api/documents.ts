@@ -18,6 +18,18 @@ export function useDocumentStatus(fileId: string) {
     queryKey: ['documents', fileId, 'status'],
     queryFn: () => apiClient.get<DocumentStatus>(`/documents/${fileId}/status`),
     enabled: !!fileId,
+    refetchInterval: (query) => {
+      const data = query.state.data
+      if (
+        data &&
+        (data.processing_status === 'processing' ||
+          data.processing_status === 'queued' ||
+          data.processing_status === 'pending')
+      ) {
+        return 2000
+      }
+      return false
+    },
   })
 }
 

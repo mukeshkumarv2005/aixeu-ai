@@ -11,14 +11,22 @@ import asyncio
 import logging
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, status
+from fastapi.encoders import jsonable_encoder
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from sqlalchemy.exc import SQLAlchemyError
+from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.api.v1 import agents, auth, chat, dashboard, documents, health, knowledge, search, settings as settings_router, storage, task_ai, tasks
 from app.core.config import settings
 from app.core.exceptions import AppException
+from app.core.logging import setup_logging
 from app.core.tasks import cleanup_expired_refresh_tokens
+
+# Initialize structured logging
+setup_logging()
 
 logger = logging.getLogger(__name__)
 
@@ -27,7 +35,7 @@ logger = logging.getLogger(__name__)
 async def lifespan(app: FastAPI):
     """Application lifespan — starts / cancels background tasks."""
     cleanup_task = None
-    if settings.REFRESH_TOKEN_CLEANUP_INTERVAL_MINUTES > 0:
+    if settings.REFRESH_TOKEN_CLEANUP_INTERVAL_MINUTES > 0 and not settings.ASYNC_WORKERS:
         logger.info(
             "Starting expired refresh-token cleanup every %d min",
             settings.REFRESH_TOKEN_CLEANUP_INTERVAL_MINUTES,
@@ -67,12 +75,52 @@ def create_app() -> FastAPI:
         allow_headers=["*"],
     )
 
+    @app.middleware("http")
+    async def add_security_headers(request: Request, call_next):
+        response = await call_next(request)
+        response.headers["X-Frame-Options"] = "DENY"
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["X-XSS-Protection"] = "1; mode=block"
+        response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+        response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+        response.headers["Content-Security-Policy"] = "default-src 'self'; frame-ancestors 'none';"
+        return response
+
     # ── Exception handlers ──────────────────────────────────────
     @app.exception_handler(AppException)
     async def app_exception_handler(request: Request, exc: AppException) -> JSONResponse:
         return JSONResponse(
             status_code=exc.status_code,
             content={"detail": exc.detail},
+        )
+
+    @app.exception_handler(RequestValidationError)
+    async def validation_exception_handler(request: Request, exc: RequestValidationError) -> JSONResponse:
+        return JSONResponse(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            content={"detail": jsonable_encoder(exc.errors())},
+        )
+
+    @app.exception_handler(SQLAlchemyError)
+    async def sqlalchemy_exception_handler(request: Request, exc: SQLAlchemyError) -> JSONResponse:
+        logger.exception("Database error occurred")
+        return JSONResponse(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            content={"detail": "Database error occurred. Please try again later."},
+        )
+
+    @app.exception_handler(Exception)
+    async def generic_exception_handler(request: Request, exc: Exception) -> JSONResponse:
+        if isinstance(exc, StarletteHTTPException):
+            return JSONResponse(
+                status_code=exc.status_code,
+                headers=getattr(exc, "headers", None),
+                content={"detail": exc.detail},
+            )
+        logger.exception("Unhandled server error occurred")
+        return JSONResponse(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            content={"detail": "An internal server error occurred."},
         )
 
     # ── Routers ────────────────────────────────────────────────

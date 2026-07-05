@@ -34,6 +34,8 @@ router = APIRouter()
 # ── Helpers ─────────────────────────────────────────────────────────────────────
 
 
+from sqlalchemy.orm import joinedload
+
 async def _get_user_file(
     file_id: uuid.UUID,
     db: AsyncSession,
@@ -41,7 +43,12 @@ async def _get_user_file(
 ) -> File:
     """Fetch a file record, raising 404 if not found or not owned by user."""
     result = await db.execute(
-        select(File).where(
+        select(File)
+        .options(
+            joinedload(File.document_metadata),
+            joinedload(File.document_analysis),
+        )
+        .where(
             File.id == file_id,
             File.user_id == user.id,
         )
@@ -78,6 +85,25 @@ async def process_document(
 ) -> DocumentStatusResponse:
     """Trigger (or re-trigger) document processing."""
     file_record = await _get_user_file(file_id, db, current_user)
+
+    if settings.ASYNC_WORKERS:
+        file_record.processing_status = "queued"
+        file_record.processing_error = None
+        
+        force = body.force_reprocess if body else False
+        if force:
+            from app.models.document import DocumentAnalysis, DocumentChunk, DocumentMetadata
+            if file_record.document_metadata:
+                await db.delete(file_record.document_metadata)
+            if file_record.document_analysis:
+                await db.delete(file_record.document_analysis)
+            # Delete chunks
+            from sqlalchemy import delete
+            await db.execute(delete(DocumentChunk).where(DocumentChunk.file_id == file_id))
+
+        await db.commit()
+        await db.refresh(file_record)
+        return await _build_status_response(file_record, db)
 
     pipeline = DocumentPipeline(db)
     updated = await pipeline.process(

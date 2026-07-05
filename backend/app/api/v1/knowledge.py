@@ -12,7 +12,7 @@ import uuid
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy import delete, select, func
+from sqlalchemy import delete, select, func, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import DbSession, get_current_active_user
@@ -161,16 +161,38 @@ async def list_knowledge_bases(
     limit: int = Query(default=20, ge=1, le=100),
 ) -> KnowledgeBaseListResponse:
     """List all knowledge bases for the authenticated user."""
-    result = await db.execute(
-        select(KnowledgeBase)
+    # Build query to fetch KnowledgeBase and aggregates in a single join query
+    stmt = (
+        select(
+            KnowledgeBase,
+            func.count(KnowledgeBaseDocument.id).label("doc_count"),
+            func.coalesce(func.sum(KnowledgeBaseDocument.chunk_count), 0).label("total_chunks")
+        )
+        .outerjoin(KnowledgeBaseDocument, KnowledgeBase.id == KnowledgeBaseDocument.knowledge_base_id)
         .where(KnowledgeBase.user_id == current_user.id)
+        .group_by(KnowledgeBase.id)
         .order_by(KnowledgeBase.updated_at.desc())
         .offset(offset)
         .limit(limit)
     )
-    kbs = result.scalars().all()
+    result = await db.execute(stmt)
+    rows = result.all()
 
-    items = [await _kb_to_response(kb, db) for kb in kbs]
+    items = [
+        KnowledgeBaseResponse(
+            id=kb.id,
+            user_id=kb.user_id,
+            name=kb.name,
+            description=kb.description,
+            embedding_model=kb.embedding_model,
+            dimension=kb.dimension,
+            document_count=doc_count,
+            total_chunks=total_chunks,
+            created_at=kb.created_at,
+            updated_at=kb.updated_at,
+        )
+        for kb, doc_count, total_chunks in rows
+    ]
 
     count_result = await db.execute(
         select(func.count(KnowledgeBase.id)).where(
@@ -361,6 +383,18 @@ async def process_kb_document(
     await _get_user_kb(kb_id, db, current_user)
     doc = await _get_kb_document(doc_id, kb_id, db)
 
+    if settings.ASYNC_WORKERS:
+        doc.status = "pending"
+        doc.error_message = None
+        await db.commit()
+        await db.refresh(doc)
+        return DocumentProcessStatus(
+            document_id=doc.id,
+            status=doc.status,
+            error_message=doc.error_message,
+            chunk_count=doc.chunk_count,
+        )
+
     pipeline = get_embedding_pipeline(db)
     force = body.force_reprocess if body else False
 
@@ -387,6 +421,34 @@ async def process_knowledge_base(
 ) -> list[DocumentProcessStatus]:
     """Process all pending (or all, if force) documents in a KB."""
     await _get_user_kb(kb_id, db, current_user)
+
+    if settings.ASYNC_WORKERS:
+        stmt = update(KnowledgeBaseDocument).where(
+            KnowledgeBaseDocument.knowledge_base_id == kb_id
+        )
+        if not force:
+            stmt = stmt.where(KnowledgeBaseDocument.status.in_(["pending", "failed"]))
+        stmt = stmt.values(status="pending", error_message=None)
+        await db.execute(stmt)
+        await db.commit()
+
+        stmt_select = select(KnowledgeBaseDocument).where(
+            KnowledgeBaseDocument.knowledge_base_id == kb_id
+        )
+        if not force:
+            stmt_select = stmt_select.where(KnowledgeBaseDocument.status == "pending")
+        result = await db.execute(stmt_select)
+        processed = result.scalars().all()
+
+        return [
+            DocumentProcessStatus(
+                document_id=doc.id,
+                status=doc.status,
+                error_message=doc.error_message,
+                chunk_count=doc.chunk_count,
+            )
+            for doc in processed
+        ]
 
     pipeline = get_embedding_pipeline(db)
     processed = await pipeline.process_knowledge_base(kb_id, force=force)

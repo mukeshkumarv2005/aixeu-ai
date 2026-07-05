@@ -86,6 +86,22 @@ export function useKbDocuments(kbId: string | undefined, offset = 0, limit = 50)
         `/knowledge-bases/${kbId}/documents?offset=${offset}&limit=${limit}`,
       ),
     enabled: !!kbId,
+    refetchInterval: (query) => {
+      const data = query.state.data
+      if (
+        data &&
+        data.items &&
+        data.items.some(
+          (doc) =>
+            doc.status === 'processing' ||
+            doc.status === 'pending' ||
+            doc.status === 'queued',
+        )
+      ) {
+        return 2000
+      }
+      return false
+    },
   })
 }
 

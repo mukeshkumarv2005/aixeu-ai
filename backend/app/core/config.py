@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from typing import List
 
-from pydantic import field_validator
+from pydantic import field_validator, model_validator
 from pydantic_core import MultiHostUrl
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -26,6 +26,7 @@ class Settings(BaseSettings):
     APP_VERSION: str = "0.1.0"
     APP_DEBUG: bool = True
     APP_ENV: str = "development"
+    ASYNC_WORKERS: bool = False
 
     # ─── Server ────────────────────────────────────────────────
     BACKEND_HOST: str = "0.0.0.0"
@@ -49,6 +50,8 @@ class Settings(BaseSettings):
     DATABASE_URL: MultiHostUrl = MultiHostUrl(
         "postgresql+asyncpg://aevix:aevix@localhost:5432/aevix"
     )
+    DATABASE_POOL_SIZE: int = 20
+    DATABASE_MAX_OVERFLOW: int = 10
 
     # ─── Redis ─────────────────────────────────────────────────
     REDIS_URL: str = "redis://localhost:6379/0"
@@ -105,6 +108,7 @@ class Settings(BaseSettings):
     AI_DEFAULT_MODEL: str = "gpt-4o"
     OPENAI_API_KEY: str = ""
     ANTHROPIC_API_KEY: str = ""
+    AI_MAX_TOKENS: int = 2048
 
     # ─── Vector Store ──────────────────────────────────────────
     VECTOR_STORE_TYPE: str = "pgvector"
@@ -127,6 +131,28 @@ class Settings(BaseSettings):
     @property
     def is_production(self) -> bool:
         return self.APP_ENV == "production"
+
+    @model_validator(mode="after")
+    def validate_production_settings(self) -> Settings:
+        if self.is_production:
+            if self.SECRET_KEY in (
+                "dev-secret-key-change-in-production",
+                "change-this-to-a-long-random-secret-key-in-production",
+                "aevix-dev-secret-key-do-not-use-in-production",
+            ):
+                raise ValueError("SECRET_KEY must be changed to a secure key in production")
+
+        # Validate active AI provider key
+        if self.AI_DEFAULT_PROVIDER == "openai" and not self.OPENAI_API_KEY:
+            raise ValueError("OPENAI_API_KEY is required when AI_DEFAULT_PROVIDER is 'openai'")
+        if self.AI_DEFAULT_PROVIDER == "anthropic" and not self.ANTHROPIC_API_KEY:
+            raise ValueError("ANTHROPIC_API_KEY is required when AI_DEFAULT_PROVIDER is 'anthropic'")
+
+        # Validate active embedding provider key
+        if self.EMBEDDING_PROVIDER == "openai" and not self.OPENAI_API_KEY:
+            raise ValueError("OPENAI_API_KEY is required when EMBEDDING_PROVIDER is 'openai'")
+
+        return self
 
 
 settings = Settings()

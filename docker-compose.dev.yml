@@ -1,0 +1,90 @@
+version: "3.8"
+
+name: aevix-dev
+
+services:
+  # ── Backend Web API ──────────────────────────────────────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    image: aevix-backend-dev:latest
+    container_name: aevix-backend-dev
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - APP_ENV=development
+      - APP_DEBUG=true
+      - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-aevix}:${POSTGRES_PASSWORD:-aevix}@postgres:5432/${POSTGRES_DB:-aevix}
+      - REDIS_URL=redis://redis:6379/0
+      - SECRET_KEY=${SECRET_KEY:-dev-secret-key-change-in-production}
+      - ASYNC_WORKERS=false
+      - REFRESH_TOKEN_CLEANUP_INTERVAL_MINUTES=5
+    volumes:
+      - ./backend/app:/app/app
+      - aevix_storage_dev:/app/storage
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    networks:
+      - aevix-network-dev
+
+  # ── Frontend SPA ─────────────────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    image: aevix-frontend-dev:latest
+    container_name: aevix-frontend-dev
+    restart: unless-stopped
+    ports:
+      - "3000:8080"
+    depends_on:
+      - backend
+    networks:
+      - aevix-network-dev
+
+  # ── PostgreSQL Database ─────────────────────────────────────
+  postgres:
+    image: pgvector/pgvector:16-pgdg-alpine
+    container_name: aevix-postgres-dev
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-aevix}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-aevix}
+      POSTGRES_DB: ${POSTGRES_DB:-aevix}
+    volumes:
+      - postgres_data_dev:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER:-aevix}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - aevix-network-dev
+
+  # ── Redis Cache / Rate Limiter ──────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: aevix-redis-dev
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data_dev:/data
+    networks:
+      - aevix-network-dev
+
+volumes:
+  postgres_data_dev:
+  redis_data_dev:
+  aevix_storage_dev:
+
+networks:
+  aevix-network-dev:
+    driver: bridge
