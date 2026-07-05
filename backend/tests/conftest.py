@@ -2,6 +2,10 @@
 
 from __future__ import annotations
 
+import os
+os.environ.setdefault("OPENAI_API_KEY", "mock-key-for-testing")
+os.environ.setdefault("ANTHROPIC_API_KEY", "mock-key-for-testing")
+
 import asyncio
 from collections.abc import AsyncGenerator, Generator
 from typing import Any
