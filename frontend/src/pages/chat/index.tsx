@@ -56,6 +56,7 @@ export default function ChatPage() {
   const [isAtBottom, setIsAtBottom] = useState(true)
   const [sending, setSending] = useState(false)
   const [selectedKbId, setSelectedKbId] = useState<string>('')
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
 
   // ── Knowledge bases for RAG ──────────────────────────────────────────────
   const { data: kbData } = useKnowledgeBases(0, 50)
@@ -86,6 +87,7 @@ export default function ChatPage() {
     if (ta) {
       ta.style.height = 'auto'
       ta.style.height = Math.min(ta.scrollHeight, 200) + 'px'
+      ta.style.overflowY = ta.scrollHeight > 200 ? 'auto' : 'hidden'
     }
   }, [])
 
@@ -115,14 +117,11 @@ export default function ChatPage() {
 
   // ── Delete conversation ──────────────────────────────────────────────────
   const handleDelete = useCallback(
-    async (e: React.MouseEvent, id: string) => {
+    (e: React.MouseEvent, id: string) => {
       e.stopPropagation()
-      const conv = conversations.find((c) => c.id === id)
-      const title = conv?.title || 'untitled'
-      if (!window.confirm(`Delete "${title}"? This cannot be undone.`)) return
-      await deleteConversation(id)
+      setConfirmDeleteId(id)
     },
-    [conversations, deleteConversation],
+    [],
   )
 
   // ── Send message ──────────────────────────────────────────────────────────
@@ -499,6 +498,37 @@ export default function ChatPage() {
         {/* Input */}
         {currentConversationId ? renderInput() : null}
       </div>
+
+      {confirmDeleteId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div className="w-full max-w-sm rounded-xl border border-surface-200 bg-white p-5 shadow-xl dark:border-surface-850 dark:bg-surface-950 animate-in fade-in zoom-in-95 duration-150">
+            <h3 className="text-base font-semibold text-surface-900 dark:text-white">
+              Delete Conversation
+            </h3>
+            <p className="mt-2 text-sm text-surface-500 dark:text-surface-400">
+              Are you sure you want to delete this conversation? This action cannot be undone.
+            </p>
+            <div className="mt-5 flex justify-end gap-3">
+              <button
+                onClick={() => setConfirmDeleteId(null)}
+                className="rounded-lg border border-surface-300 bg-white px-4 py-2 text-sm font-medium text-surface-700 hover:bg-surface-50 dark:border-surface-600 dark:bg-surface-900 dark:text-surface-300 dark:hover:bg-surface-800"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={async () => {
+                  const id = confirmDeleteId
+                  setConfirmDeleteId(null)
+                  await deleteConversation(id)
+                }}
+                className="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 transition-colors"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

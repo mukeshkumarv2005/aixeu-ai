@@ -36,7 +36,6 @@ import {
   useRecordRecentSearch,
 } from '@/api/search'
 import type { SearchResult } from '@/types/search'
-import { ENTITY_TYPES } from '@/types/search'
 
 // ---------------------------------------------------------------------------
 // Entity-type icon & color maps
@@ -70,6 +69,13 @@ const ENTITY_LABELS: Record<string, string> = {
 }
 
 // ── Defaults ──────────────────────────────────────────────────────────────
+
+const UI_FILTER_TYPES = [
+  { value: 'chat', label: 'Chat' },
+  { value: 'file', label: 'Files' },
+  { value: 'kb_document', label: 'Knowledge Base' },
+  { value: 'task', label: 'Tasks' },
+]
 
 const PAGE_SIZE = 20
 
@@ -145,9 +151,19 @@ export default function SearchPage() {
   const toggleType = useCallback(
     (type: string) => {
       setSelectedTypes((prev) => {
-        const next = prev.includes(type)
-          ? prev.filter((t) => t !== type)
-          : [...prev, type]
+        let next: string[]
+        if (type === 'chat') {
+          const hasChat = prev.includes('conversation') || prev.includes('message')
+          if (hasChat) {
+            next = prev.filter((t) => t !== 'conversation' && t !== 'message')
+          } else {
+            next = [...prev, 'conversation', 'message']
+          }
+        } else {
+          next = prev.includes(type)
+            ? prev.filter((t) => t !== type)
+            : [...prev, type]
+        }
         updateUrl(query, next, 1)
         return next
       })
@@ -198,7 +214,7 @@ export default function SearchPage() {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Search conversations, files, tasks, knowledge base…"
-              className="min-w-0 flex-1 bg-transparent text-base text-surface-900 outline-none placeholder:text-surface-400 dark:text-white"
+              className="min-w-0 flex-1 bg-transparent text-base text-surface-900 outline-none placeholder:text-surface-400 dark:text-white border-0 focus:ring-0 focus:border-0 focus:outline-none"
               autoFocus
             />
             {query && (
@@ -229,8 +245,10 @@ export default function SearchPage() {
           <span className="text-xs font-medium text-surface-400">
             Filter:
           </span>
-          {ENTITY_TYPES.map((type) => {
-            const active = selectedTypes.includes(type.value)
+          {UI_FILTER_TYPES.map((type) => {
+            const active = type.value === 'chat'
+              ? selectedTypes.includes('conversation') || selectedTypes.includes('message')
+              : selectedTypes.includes(type.value)
             return (
               <button
                 key={type.value}

@@ -768,9 +768,9 @@ export default function AgentDetailPage() {
             </div>
 
             {/* Danger zone */}
-            <div className="rounded-xl border border-red-200 bg-white p-6 dark:border-red-900/30 dark:bg-surface-950">
-              <h2 className="mb-1 text-lg font-semibold text-red-600 dark:text-red-400">
-                Danger Zone
+            <div className="rounded-xl border border-border bg-white p-6 dark:bg-surface-950">
+              <h2 className="mb-1 text-lg font-semibold text-amber-600 dark:text-amber-500">
+                Critical Actions
               </h2>
               <p className="mb-4 text-sm text-surface-500 dark:text-surface-400">
                 Once you delete an agent, there is no going back. All runs and
@@ -779,7 +779,7 @@ export default function AgentDetailPage() {
               <button
                 onClick={() => setShowDeleteDialog(true)}
                 disabled={deleteAgent.isPending}
-                className="flex items-center gap-2 rounded-lg border border-red-300 bg-white px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50 dark:border-red-700 dark:bg-surface-900 dark:text-red-400 dark:hover:bg-red-950/20 disabled:opacity-50 transition-colors"
+                className="flex items-center gap-2 rounded-lg border border-border bg-white px-4 py-2 text-sm font-medium text-amber-600 hover:bg-accent hover:text-amber-700 dark:bg-surface-900 dark:text-amber-500 dark:hover:text-amber-400 disabled:opacity-50 transition-colors"
               >
                 {deleteAgent.isPending ? (
                   <Loader2 size={14} className="animate-spin" />

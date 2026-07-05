@@ -17,6 +17,8 @@ import {
 import { useAuthStore } from '@/stores/auth'
 import { useThemeStore } from '@/stores/theme'
 import { SearchBar } from '@/components/search/SearchBar'
+import { useTranslation } from '@/lib/i18n'
+import { cn } from '@/lib/utils'
 
 // ---------------------------------------------------------------------------
 // Route → page title mapping
@@ -55,15 +57,38 @@ export function Topbar({ onMenuToggle }: TopbarProps) {
   const location = useLocation()
   const { user, logout } = useAuthStore()
   const { theme, setTheme } = useThemeStore()
+  const { t } = useTranslation()
 
   const [profileOpen, setProfileOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
+
+  const [notificationsOpen, setNotificationsOpen] = useState(false)
+  const notificationRef = useRef<HTMLDivElement>(null)
+  const [notifications, setNotifications] = useState([
+    {
+      id: '1',
+      title: 'Welcome to Aevix',
+      description: 'Explore the dashboard, chat with AI, and manage your tasks.',
+      time: 'Just now',
+      read: false,
+    },
+    {
+      id: '2',
+      title: 'AI model updated',
+      description: 'Your default AI assistant is configured and ready.',
+      time: '10m ago',
+      read: false,
+    },
+  ])
 
   // Close the dropdown on outside click
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
         setProfileOpen(false)
+      }
+      if (notificationRef.current && !notificationRef.current.contains(e.target as Node)) {
+        setNotificationsOpen(false)
       }
     }
     document.addEventListener('mousedown', handleClickOutside)
@@ -94,13 +119,13 @@ export function Topbar({ onMenuToggle }: TopbarProps) {
       <div className="flex items-center gap-3">
         <button
           onClick={onMenuToggle}
-          className="rounded-lg p-1.5 text-surface-500 hover:bg-surface-100 hover:text-surface-700 dark:hover:bg-surface-800 dark:hover:text-surface-300"
+          className="rounded-lg p-1.5 text-surface-500 hover:bg-surface-100 hover:text-surface-700 dark:hover:bg-surface-800 dark:hover:text-surface-300 md:hidden"
           title="Toggle sidebar"
         >
           <Menu size={20} />
         </button>
         <h1 className="text-lg font-semibold text-surface-900 dark:text-white">
-          {pageTitle}
+          {t(pageTitle)}
         </h1>
       </div>
 
@@ -127,12 +152,83 @@ export function Topbar({ onMenuToggle }: TopbarProps) {
         </button>
 
         {/* Notifications */}
-        <button
-          className="rounded-lg p-2 text-surface-500 hover:bg-surface-100 hover:text-surface-700 dark:hover:bg-surface-800 dark:hover:text-surface-300"
-          title="Notifications"
-        >
-          <Bell size={18} />
-        </button>
+        <div ref={notificationRef} className="relative">
+          <button
+            onClick={() => setNotificationsOpen(!notificationsOpen)}
+            className="relative rounded-lg p-2 text-surface-500 hover:bg-surface-100 hover:text-surface-700 dark:hover:bg-surface-800 dark:hover:text-surface-300"
+            title="Notifications"
+          >
+            <Bell size={18} />
+            {notifications.some((n) => !n.read) && (
+              <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-primary-500" />
+            )}
+          </button>
+
+          {/* Dropdown */}
+          {notificationsOpen && (
+            <div className="absolute right-0 mt-1 z-50 w-80 rounded-xl border border-surface-200 bg-white p-2 shadow-lg dark:border-surface-800 dark:bg-surface-950">
+              <div className="flex items-center justify-between border-b border-surface-100 px-3 py-2 pb-2 dark:border-surface-800">
+                <span className="text-xs font-semibold text-surface-900 dark:text-white">
+                  Notifications
+                </span>
+                {notifications.length > 0 && (
+                  <button
+                    onClick={() => setNotifications([])}
+                    className="text-[10px] font-medium text-primary-600 hover:text-primary-700 dark:text-primary-400"
+                  >
+                    Clear all
+                  </button>
+                )}
+              </div>
+              <div className="max-h-64 overflow-y-auto py-1">
+                {notifications.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-8 text-center">
+                    <Bell className="h-8 w-8 text-surface-300 dark:text-surface-600" />
+                    <span className="mt-2 text-xs text-surface-500 dark:text-surface-400">
+                      No notifications
+                    </span>
+                  </div>
+                ) : (
+                  <div className="divide-y divide-surface-100 dark:divide-surface-800">
+                    {notifications.map((n) => (
+                      <div
+                        key={n.id}
+                        onClick={() => {
+                          setNotifications((prev) =>
+                            prev.map((item) =>
+                              item.id === n.id ? { ...item, read: true } : item,
+                            ),
+                          )
+                        }}
+                        className={cn(
+                          'p-3 text-left transition-colors hover:bg-surface-50 dark:hover:bg-surface-900 cursor-pointer rounded-lg',
+                          !n.read && 'bg-primary-50/10',
+                        )}
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <p
+                            className={cn(
+                              'text-xs font-semibold text-surface-900 dark:text-white',
+                              !n.read && 'text-primary-600 dark:text-primary-400',
+                            )}
+                          >
+                            {n.title}
+                          </p>
+                          <span className="shrink-0 text-[10px] text-surface-400">
+                            {n.time}
+                          </span>
+                        </div>
+                        <p className="mt-0.5 text-xs text-surface-500 dark:text-surface-400 line-clamp-2">
+                          {n.description}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
 
         {/* ── Profile dropdown ──────────────────────────── */}
         <div ref={menuRef} className="relative">
@@ -177,7 +273,7 @@ export function Topbar({ onMenuToggle }: TopbarProps) {
                   className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-surface-700 hover:bg-surface-100 dark:text-surface-300 dark:hover:bg-surface-800"
                 >
                   <User size={15} />
-                  Profile
+                  {t('Profile')}
                 </button>
                 <button
                   onClick={() => {
@@ -187,21 +283,21 @@ export function Topbar({ onMenuToggle }: TopbarProps) {
                   className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-surface-700 hover:bg-surface-100 dark:text-surface-300 dark:hover:bg-surface-800"
                 >
                   <Settings size={15} />
-                  Settings
+                  {t('Settings')}
                 </button>
                 <button
                   onClick={() => setTheme(nextTheme)}
                   className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-surface-700 hover:bg-surface-100 dark:text-surface-300 dark:hover:bg-surface-800"
                 >
                   <ThemeIcon size={15} />
-                  {nextTheme === 'dark' ? 'Dark mode' : 'Light mode'}
+                  {nextTheme === 'dark' ? t('Dark mode') : t('Light mode')}
                 </button>
                 <button
                   onClick={handleLogout}
                   className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20"
                 >
                   <LogOut size={15} />
-                  Sign out
+                  {t('Sign out')}
                 </button>
               </div>
             </div>

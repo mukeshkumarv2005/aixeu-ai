@@ -167,10 +167,18 @@ export default function KnowledgeBasePage() {
         /* ── Card grid ─────────────────────────────────────────────── */
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {items.map((kb) => (
-            <button
+            <div
               key={kb.id}
               onClick={() => navigate(`/knowledge/${kb.id}`)}
-              className="group relative rounded-xl border border-surface-200 bg-white p-5 text-left transition-all hover:border-primary-300 hover:shadow-sm dark:border-surface-800 dark:bg-surface-950 dark:hover:border-primary-700"
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault()
+                  navigate(`/knowledge/${kb.id}`)
+                }
+              }}
+              className="group relative rounded-xl border border-surface-200 bg-white p-5 text-left transition-all hover:border-primary-300 hover:shadow-sm dark:border-surface-800 dark:bg-surface-950 dark:hover:border-primary-700 cursor-pointer"
             >
               {/* Delete button */}
               <button
@@ -223,7 +231,7 @@ export default function KnowledgeBasePage() {
               <p className="mt-2 text-xs text-surface-400">
                 Created {new Date(kb.created_at).toLocaleDateString()}
               </p>
-            </button>
+            </div>
           ))}
         </div>
       )}

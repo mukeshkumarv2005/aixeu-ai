@@ -204,13 +204,16 @@ def get_embedding_provider() -> EmbeddingProvider:
     """Return the configured embedding provider based on settings.
 
     Priority:
-    1. If ``EMBEDDING_PROVIDER`` is ``"local"`` → ``LocalEmbeddingProvider``
-    2. If ``EMBEDDING_PROVIDER`` is ``"openai"`` and key set → ``OpenAIEmbeddingProvider``
-    3. If ``OPENAI_API_KEY`` is set → ``OpenAIEmbeddingProvider``
-    4. Otherwise → ``MockEmbeddingProvider`` (safe for dev/testing)
+    1. If ``EMBEDDING_PROVIDER`` is ``"mock"`` → ``MockEmbeddingProvider``
+    2. If ``EMBEDDING_PROVIDER`` is ``"local"`` → ``LocalEmbeddingProvider``
+    3. If ``EMBEDDING_PROVIDER`` is ``"openai"`` and key set → ``OpenAIEmbeddingProvider``
+    4. If ``OPENAI_API_KEY`` is set → ``OpenAIEmbeddingProvider``
+    5. Otherwise → ``MockEmbeddingProvider`` (safe for dev/testing)
     """
     provider = settings.EMBEDDING_PROVIDER.lower()
 
+    if provider == "mock":
+        return MockEmbeddingProvider()
     if provider == "local":
         return LocalEmbeddingProvider()
     if provider == "openai" and settings.OPENAI_API_KEY:

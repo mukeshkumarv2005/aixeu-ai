@@ -28,7 +28,6 @@ import {
   useRecordRecentSearch,
 } from '@/api/search'
 import type { SearchResult } from '@/types/search'
-import { ENTITY_TYPES } from '@/types/search'
 
 // ---------------------------------------------------------------------------
 // Entity-type icon map
@@ -52,6 +51,13 @@ const ENTITY_COLORS: Record<string, string> = {
     'bg-green-50 text-green-600 dark:bg-green-900/20 dark:text-green-400',
   task: 'bg-purple-50 text-purple-600 dark:bg-purple-900/20 dark:text-purple-400',
 }
+
+const UI_FILTER_TYPES = [
+  { value: 'chat', label: 'Chat' },
+  { value: 'file', label: 'Files' },
+  { value: 'kb_document', label: 'Knowledge Base' },
+  { value: 'task', label: 'Tasks' },
+]
 
 // ---------------------------------------------------------------------------
 // Props
@@ -186,9 +192,15 @@ export function SearchBar({
   }, [])
 
   const toggleType = useCallback((type: string) => {
-    setSelectedTypes((prev) =>
-      prev.includes(type) ? prev.filter((t) => t !== type) : [...prev, type],
-    )
+    setSelectedTypes((prev) => {
+      if (type === 'chat') {
+        const hasChat = prev.includes('conversation') || prev.includes('message')
+        return hasChat
+          ? prev.filter((t) => t !== 'conversation' && t !== 'message')
+          : [...prev, 'conversation', 'message']
+      }
+      return prev.includes(type) ? prev.filter((t) => t !== type) : [...prev, type]
+    })
   }, [])
 
   const handleRecentClick = useCallback(
@@ -226,7 +238,7 @@ export function SearchBar({
           }}
           onKeyDown={handleKeyDown}
           placeholder={placeholder}
-          className="min-w-0 flex-1 bg-transparent text-sm text-surface-900 outline-none placeholder:text-surface-400 dark:text-white"
+          className="min-w-0 flex-1 bg-transparent text-sm text-surface-900 outline-none placeholder:text-surface-400 dark:text-white border-0 focus:ring-0 focus:border-0 focus:outline-none"
         />
         {query && (
           <button
@@ -250,8 +262,10 @@ export function SearchBar({
         >
           {/* ── Entity type filter chips ────────────────────────── */}
           <div className="flex flex-wrap gap-1.5 border-b border-surface-100 px-3 py-2 dark:border-surface-800">
-            {ENTITY_TYPES.map((type) => {
-              const active = selectedTypes.includes(type.value)
+            {UI_FILTER_TYPES.map((type) => {
+              const active = type.value === 'chat'
+                ? selectedTypes.includes('conversation') || selectedTypes.includes('message')
+                : selectedTypes.includes(type.value)
               return (
                 <button
                   key={type.value}

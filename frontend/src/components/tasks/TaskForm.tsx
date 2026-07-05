@@ -5,6 +5,15 @@ import { Loader2 } from 'lucide-react'
 import { TASK_STATUSES, TASK_PRIORITIES } from '@/types/task'
 import type { TaskCreate, TaskUpdate, TaskResponse } from '@/types/task'
 
+function toLocalDateTimeString(isoString: string | null | undefined): string {
+  if (!isoString) return ''
+  const date = new Date(isoString)
+  if (isNaN(date.getTime())) return ''
+  const tzOffset = date.getTimezoneOffset() * 60000
+  const localISOTime = new Date(date.getTime() - tzOffset).toISOString()
+  return localISOTime.slice(0, 16)
+}
+
 // ── Props ──────────────────────────────────────────────────────────────────
 
 interface TaskFormProps {
@@ -40,9 +49,11 @@ export function TaskForm({
     draftDefaults?.priority ?? task?.priority ?? 'medium',
   )
   const [dueDate, setDueDate] = useState(
-    draftDefaults?.due_date ?? task?.due_date ?? '',
+    toLocalDateTimeString(draftDefaults?.due_date ?? task?.due_date),
   )
-  const [reminderAt, setReminderAt] = useState(task?.reminder_at ?? '')
+  const [reminderAt, setReminderAt] = useState(
+    toLocalDateTimeString(task?.reminder_at),
+  )
   const [estimatedMinutes, setEstimatedMinutes] = useState(
     draftDefaults?.estimated_minutes
       ? String(draftDefaults.estimated_minutes)
@@ -67,8 +78,8 @@ export function TaskForm({
       description: description.trim() || null,
       status,
       priority,
-      due_date: dueDate || null,
-      reminder_at: reminderAt || null,
+      due_date: dueDate ? new Date(dueDate).toISOString() : null,
+      reminder_at: reminderAt ? new Date(reminderAt).toISOString() : null,
       estimated_minutes: estimatedMinutes ? Number(estimatedMinutes) : null,
     }
 
@@ -156,8 +167,8 @@ export function TaskForm({
           </label>
           <input
             type="datetime-local"
-            value={dueDate ? dueDate.slice(0, 16) : ''}
-            onChange={(e) => setDueDate(e.target.value ? new Date(e.target.value).toISOString() : '')}
+            value={dueDate}
+            onChange={(e) => setDueDate(e.target.value)}
             className="w-full rounded-lg border border-surface-300 bg-white px-3 py-2 text-sm text-surface-900 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 dark:border-surface-600 dark:bg-surface-900 dark:text-white"
           />
         </div>
@@ -168,8 +179,8 @@ export function TaskForm({
           </label>
           <input
             type="datetime-local"
-            value={reminderAt ? reminderAt.slice(0, 16) : ''}
-            onChange={(e) => setReminderAt(e.target.value ? new Date(e.target.value).toISOString() : '')}
+            value={reminderAt}
+            onChange={(e) => setReminderAt(e.target.value)}
             className="w-full rounded-lg border border-surface-300 bg-white px-3 py-2 text-sm text-surface-900 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 dark:border-surface-600 dark:bg-surface-900 dark:text-white"
           />
         </div>

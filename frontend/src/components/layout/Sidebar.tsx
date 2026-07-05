@@ -14,8 +14,7 @@ import {
   CheckSquare,
   Search,
   Settings,
-  ChevronLeft,
-  ChevronRight,
+  Menu,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -34,6 +33,8 @@ const NAV_ITEMS = [
   { to: '/settings', label: 'Settings', icon: Settings },
 ] as const
 
+import { useTranslation } from '@/lib/i18n'
+
 // ---------------------------------------------------------------------------
 // Props
 // ---------------------------------------------------------------------------
@@ -48,6 +49,8 @@ interface SidebarProps {
 // ---------------------------------------------------------------------------
 
 export function Sidebar({ open, onToggle }: SidebarProps) {
+  const { t } = useTranslation()
+
   return (
     <aside
       className={cn(
@@ -73,22 +76,22 @@ export function Sidebar({ open, onToggle }: SidebarProps) {
               </span>
             </NavLink>
             <button
-              onClick={onToggle}
-              className="rounded-lg p-1.5 text-surface-400 hover:bg-surface-100 hover:text-surface-600 dark:hover:bg-surface-800 dark:hover:text-surface-300"
-              title="Collapse sidebar"
-            >
-              <ChevronLeft size={16} />
-            </button>
-          </>
-        ) : (
-          <button
-            onClick={onToggle}
-            className="rounded-lg p-1.5 text-surface-400 hover:bg-surface-100 hover:text-surface-600 dark:hover:bg-surface-800 dark:hover:text-surface-300"
-            title="Expand sidebar"
-          >
-            <ChevronRight size={16} />
-          </button>
-        )}
+               onClick={onToggle}
+               className="rounded-lg p-1.5 text-surface-400 hover:bg-surface-100 hover:text-surface-600 dark:hover:bg-surface-800 dark:hover:text-surface-300"
+               title="Collapse sidebar"
+             >
+               <Menu size={18} />
+             </button>
+           </>
+         ) : (
+           <button
+             onClick={onToggle}
+             className="rounded-lg p-1.5 text-surface-400 hover:bg-surface-100 hover:text-surface-600 dark:hover:bg-surface-800 dark:hover:text-surface-300"
+             title="Expand sidebar"
+           >
+             <Menu size={18} />
+           </button>
+         )}
       </div>
 
       {/* ── Navigation ────────────────────────────────────── */}
@@ -106,10 +109,10 @@ export function Sidebar({ open, onToggle }: SidebarProps) {
                 !open && 'justify-center px-0',
               )
             }
-            title={!open ? label : undefined}
+            title={!open ? t(label) : undefined}
           >
             <Icon size={18} className="shrink-0" />
-            {open && <span>{label}</span>}
+            {open && <span>{t(label)}</span>}
           </NavLink>
         ))}
       </nav>

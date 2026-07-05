@@ -1,6 +1,7 @@
 /** Settings layout — sidebar nav + <Outlet />. */
 
 import { Outlet, NavLink } from 'react-router-dom'
+import { useTranslation } from '@/lib/i18n'
 import {
   Palette,
   Cog,
@@ -27,8 +28,10 @@ const navItems: NavItem[] = [
 ]
 
 export default function SettingsLayout() {
+  const { t } = useTranslation()
+
   return (
-    <div className="mx-auto flex w-full max-w-5xl flex-col gap-6 p-4 sm:p-6 lg:flex-row">
+    <div className="flex w-full flex-col gap-6 p-4 sm:p-6 lg:flex-row">
       {/* Sidebar nav */}
       <nav className="flex shrink-0 flex-col gap-1 lg:w-48" aria-label="Settings navigation">
         {navItems.map((item) => (
@@ -45,7 +48,7 @@ export default function SettingsLayout() {
             }
           >
             <item.icon className="h-4 w-4 shrink-0" />
-            {item.label}
+            {t(item.label)}
           </NavLink>
         ))}
       </nav>

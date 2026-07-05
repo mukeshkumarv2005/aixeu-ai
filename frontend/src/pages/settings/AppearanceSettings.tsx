@@ -5,7 +5,7 @@ import { useThemeStore, ACCENT_COLORS, DENSITY_OPTIONS } from '@/stores/theme'
 import type { AccentColor, DensityOption } from '@/stores/theme'
 import { useSettings, useUpdateSettings } from '@/api/settings'
 import { cn } from '@/lib/utils'
-import { Sun, Moon, Monitor, Check, Loader2 } from 'lucide-react'
+import { Sun, Moon, Monitor, Loader2 } from 'lucide-react'
 
 const THEMES = [
   { value: 'light', label: 'Light', icon: Sun },
@@ -112,7 +112,6 @@ export default function AppearanceSettings() {
             >
               <Icon className="h-4 w-4" />
               {label}
-              {store.theme === value && <Check className="ml-1 h-3.5 w-3.5" />}
             </button>
           ))}
         </div>
@@ -135,9 +134,6 @@ export default function AppearanceSettings() {
               )}
               style={{ backgroundColor: colorSwatch(color) }}
             >
-              {store.accentColor === color && (
-                <Check className="mx-auto h-4 w-4 text-white drop-shadow" />
-              )}
             </button>
           ))}
         </div>
@@ -159,7 +155,6 @@ export default function AppearanceSettings() {
               )}
             >
               {d}
-              {store.density === d && <Check className="ml-1.5 inline h-3.5 w-3.5" />}
             </button>
           ))}
         </div>
@@ -201,7 +196,11 @@ export default function AppearanceSettings() {
             max={150}
             step={5}
             value={fontScaleBuffer}
-            onChange={(e) => setFontScaleBuffer(Number(e.target.value))}
+            onChange={(e) => {
+              const val = Number(e.target.value)
+              setFontScaleBuffer(val)
+              store.setFontScale(val)
+            }}
             onMouseUp={handleFontScaleCommit}
             onKeyUp={(e) => {
               if (e.key === 'Enter' || e.key === ' ') handleFontScaleCommit()
@@ -221,14 +220,14 @@ export default function AppearanceSettings() {
 
 function colorSwatch(color: string): string {
   const swatches: Record<string, string> = {
-    indigo: '#4f46e5',
+    indigo: '#d97706',  // Warm Gold/Amber instead of blue
     emerald: '#10b981',
     amber: '#f59e0b',
     rose: '#e11d48',
-    violet: '#8b5cf6',
-    sky: '#0ea5e9',
+    violet: '#7c2d12',  // Warm Rust
+    sky: '#fbbf24',     // Champagne Gold
   }
-  return swatches[color] ?? '#4f46e5'
+  return swatches[color] ?? '#f59e0b'
 }
 
 function Section({

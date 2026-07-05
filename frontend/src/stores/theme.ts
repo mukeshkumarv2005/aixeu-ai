@@ -44,7 +44,7 @@ export const useThemeStore = create<ThemeState>()(
   persist(
     (set, get) => ({
       theme: 'dark',
-      accentColor: 'indigo',
+      accentColor: 'amber',
       density: 'comfortable',
       animationsEnabled: true,
       fontScale: 100,
@@ -147,12 +147,12 @@ function applyAccentColor(color: AccentColor) {
   const root = document.documentElement
   // Map logical accent names to Tailwind v3 color values
   const colorMap: Record<AccentColor, string> = {
-    indigo: '#4f46e5',
+    indigo: '#d97706',  // Map to Warm Gold/Amber
     emerald: '#10b981',
     amber: '#f59e0b',
     rose: '#e11d48',
-    violet: '#8b5cf6',
-    sky: '#0ea5e9',
+    violet: '#7c2d12',  // Warm Rust
+    sky: '#fbbf24',     // Champagne Gold
   }
   root.style.setProperty('--color-accent', colorMap[color] ?? colorMap.indigo)
   root.style.setProperty('--color-accent-hover', adjustBrightness(colorMap[color] ?? colorMap.indigo, -15))

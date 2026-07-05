@@ -145,6 +145,10 @@ class OpenAIProvider(AIProvider):
             stream_options={"include_usage": True},
         )
 
+        finish_reason: str | None = None
+        input_tokens: int | None = None
+        output_tokens: int | None = None
+
         async for chunk in stream:
             delta = chunk.choices[0].delta if chunk.choices else None
 
@@ -152,12 +156,18 @@ class OpenAIProvider(AIProvider):
                 yield StreamEvent(content=delta.content)
 
             if chunk.choices and chunk.choices[0].finish_reason:
-                yield StreamEvent(
-                    content="",
-                    finish_reason=chunk.choices[0].finish_reason,
-                    input_tokens=getattr(chunk.usage, "prompt_tokens", None) if chunk.usage else None,
-                    output_tokens=getattr(chunk.usage, "completion_tokens", None) if chunk.usage else None,
-                )
+                finish_reason = chunk.choices[0].finish_reason
+
+            if chunk.usage:
+                input_tokens = getattr(chunk.usage, "prompt_tokens", None)
+                output_tokens = getattr(chunk.usage, "completion_tokens", None)
+
+        yield StreamEvent(
+            content="",
+            finish_reason=finish_reason or "stop",
+            input_tokens=input_tokens,
+            output_tokens=output_tokens,
+        )
 
     async def generate_title(
         self,

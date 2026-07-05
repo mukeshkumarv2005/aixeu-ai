@@ -316,3 +316,40 @@ async def update_file(
     await db.flush()
     await db.refresh(record)
     return FileInfo.model_validate(record)
+
+
+@router.get(
+    "/storage/public/{file_id}",
+    response_class=Response,
+    summary="Download a file publicly",
+    description="Stream the file binary without auth.",
+)
+async def download_file_public(
+    file_id: uuid.UUID,
+    db: DbSession,
+) -> Any:
+    """Download the raw bytes of a file publicly (e.g. for avatars)."""
+    result = await db.execute(
+        select(File).where(File.id == file_id)
+    )
+    record = result.scalar_one_or_none()
+    if record is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="File not found",
+        )
+
+    provider = get_storage_provider()
+    try:
+        content = await provider.download(record.storage_path)
+    except FileNotFoundError:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="File data not found on storage backend",
+        )
+
+    return Response(
+        content=content,
+        media_type=record.mime_type,
+    )
+

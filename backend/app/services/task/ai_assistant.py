@@ -14,7 +14,7 @@ from __future__ import annotations
 import json
 import re
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from typing import Any
 
 from sqlalchemy import select
@@ -22,7 +22,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
 
 from app.models.conversation import Conversation, Message
-from app.models.knowledge import KnowledgeBaseDocument
+from app.models.knowledge import KnowledgeBase, KnowledgeBaseDocument
 from app.models.task import Task
 from app.schemas.task_ai import (
     AIConvertChatResponse,
@@ -57,7 +57,7 @@ def _week_boundary() -> tuple[datetime, datetime]:
     )
     # Walk back to Monday
     days_since_monday = start.weekday()  # Monday=0
-    start = start.replace(day=start.day - days_since_monday)
+    start = start - timedelta(days=days_since_monday)
     return start, now
 
 
@@ -542,9 +542,11 @@ class TaskAIAssistant:
     ) -> AIConvertDocumentResponse:
         """Extract a task suggestion from a knowledge-base document."""
         result = await self.db.execute(
-            select(KnowledgeBaseDocument).where(
+            select(KnowledgeBaseDocument)
+            .join(KnowledgeBase, KnowledgeBaseDocument.knowledge_base_id == KnowledgeBase.id)
+            .where(
                 KnowledgeBaseDocument.id == document_id,
-                KnowledgeBaseDocument.user_id == user_id,
+                KnowledgeBase.user_id == user_id,
             )
         )
         doc = result.unique().scalar_one_or_none()

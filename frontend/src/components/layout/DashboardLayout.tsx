@@ -9,11 +9,18 @@ import { Outlet, useLocation } from 'react-router-dom'
 import { cn } from '@/lib/utils'
 import { Sidebar } from './Sidebar'
 import { Topbar } from './Topbar'
+import { useThemeStore } from '@/stores/theme'
 
 export function DashboardLayout() {
-  const [sidebarOpen, setSidebarOpen] = useState(true)
+  const sidebarDefaultOpen = useThemeStore((s) => s.sidebarDefaultOpen)
+  const [sidebarOpen, setSidebarOpen] = useState(sidebarDefaultOpen)
   const [mobileOpen, setMobileOpen] = useState(false)
   const location = useLocation()
+
+  // Keep sidebar state in sync with global store changes
+  useEffect(() => {
+    setSidebarOpen(sidebarDefaultOpen)
+  }, [sidebarDefaultOpen])
 
   // Close the mobile drawer on route change
   useEffect(() => {

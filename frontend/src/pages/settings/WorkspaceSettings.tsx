@@ -1,8 +1,10 @@
 /** Workspace settings — default model, timezone, language, default agent. */
 
+import { useState, useEffect } from 'react'
 import { useSettings, useUpdateSettings } from '@/api/settings'
 import type { UserSettingsResponse } from '@/types/settings'
 import { Loader2 } from 'lucide-react'
+import { useTranslation } from '@/lib/i18n'
 
 // Common timezone list — abbreviated for UX clarity
 const COMMON_TIMEZONES = [
@@ -38,6 +40,21 @@ const MODELS = [
 export default function WorkspaceSettings() {
   const { data: settings, isLoading, error } = useSettings()
   const updateSettings = useUpdateSettings()
+  const { t } = useTranslation()
+
+  // Local state for instant select rendering
+  const [localModel, setLocalModel] = useState('gpt-4o')
+  const [localTimezone, setLocalTimezone] = useState('UTC')
+  const [localLanguage, setLocalLanguage] = useState('en')
+
+  // Sync with server when settings fetch completes
+  useEffect(() => {
+    if (settings) {
+      setLocalModel(settings.default_model)
+      setLocalTimezone(settings.timezone)
+      setLocalLanguage(settings.language)
+    }
+  }, [settings])
 
   if (isLoading) {
     return (
@@ -50,7 +67,7 @@ export default function WorkspaceSettings() {
   if (error || !settings) {
     return (
       <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-4 text-sm text-destructive">
-        Failed to load settings.
+        {t('Failed to load settings.')}
       </div>
     )
   }
@@ -67,17 +84,21 @@ export default function WorkspaceSettings() {
   return (
     <div className="space-y-8">
       <div>
-        <h2 className="text-lg font-semibold">Workspace</h2>
+        <h2 className="text-lg font-semibold">{t('Workspace')}</h2>
         <p className="text-sm text-muted-foreground">
-          Configure your default workspace preferences.
+          {t('Configure your default workspace preferences.')}
         </p>
       </div>
 
       {/* Default model */}
-      <Section title="Default Model" saving={saving}>
+      <Section title={t('Default Model')} saving={saving}>
         <select
-          value={settings.default_model}
-          onChange={(e) => handleChange('default_model', e.target.value)}
+          value={localModel}
+          onChange={(e) => {
+            const val = e.target.value
+            setLocalModel(val)
+            handleChange('default_model', val)
+          }}
           className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary sm:w-72"
         >
           {MODELS.map((m) => (
@@ -87,15 +108,19 @@ export default function WorkspaceSettings() {
           ))}
         </select>
         <p className="mt-1 text-xs text-muted-foreground">
-          Used as the default when creating new chats and tasks.
+          {t('Used as the default when creating new chats and tasks.')}
         </p>
       </Section>
 
       {/* Timezone */}
-      <Section title="Timezone" saving={saving}>
+      <Section title={t('Timezone')} saving={saving}>
         <select
-          value={settings.timezone}
-          onChange={(e) => handleChange('timezone', e.target.value)}
+          value={localTimezone}
+          onChange={(e) => {
+            const val = e.target.value
+            setLocalTimezone(val)
+            handleChange('timezone', val)
+          }}
           className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary sm:w-72"
         >
           {COMMON_TIMEZONES.map((tz) => (
@@ -107,10 +132,14 @@ export default function WorkspaceSettings() {
       </Section>
 
       {/* Language */}
-      <Section title="Language" saving={saving}>
+      <Section title={t('Language')} saving={saving}>
         <select
-          value={settings.language}
-          onChange={(e) => handleChange('language', e.target.value)}
+          value={localLanguage}
+          onChange={(e) => {
+            const val = e.target.value
+            setLocalLanguage(val)
+            handleChange('language', val)
+          }}
           className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary sm:w-72"
         >
           <option value="en">English</option>
@@ -121,17 +150,17 @@ export default function WorkspaceSettings() {
           <option value="zh">中文</option>
         </select>
         <p className="mt-1 text-xs text-muted-foreground">
-          UI language. Some areas may remain in English.
+          {t('UI language. Some areas may remain in English.')}
         </p>
       </Section>
 
       {/* Default agent */}
-      <Section title="Default Agent" saving={saving}>
+      <Section title={t('Default Agent')} saving={saving}>
         <p className="text-sm text-muted-foreground">
-          Coming soon — select a default AI agent for new conversations.
+          {t('Coming soon — select a default AI agent for new conversations.')}
         </p>
         <p className="mt-1 text-xs text-muted-foreground">
-          Stored as <code className="rounded bg-muted px-1 py-0.5">default_agent_id</code>.
+          {t('Stored as')} <code className="rounded bg-muted px-1 py-0.5">default_agent_id</code>.
         </p>
       </Section>
     </div>
