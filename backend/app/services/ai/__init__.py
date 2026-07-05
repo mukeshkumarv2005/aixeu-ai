@@ -123,7 +123,11 @@ class OpenAIProvider(AIProvider):
     def __init__(self) -> None:
         from openai import AsyncOpenAI
 
-        self._client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
+        self._client = AsyncOpenAI(
+            api_key=settings.OPENAI_API_KEY,
+            base_url="https://openrouter.ai/api/v1",
+        )
+
 
     async def stream_chat(
         self,
@@ -136,6 +140,7 @@ class OpenAIProvider(AIProvider):
         stream = await self._client.chat.completions.create(
             model=model,
             messages=openai_messages,
+            max_tokens=settings.AI_MAX_TOKENS,
             stream=True,
             stream_options={"include_usage": True},
         )
@@ -150,8 +155,8 @@ class OpenAIProvider(AIProvider):
                 yield StreamEvent(
                     content="",
                     finish_reason=chunk.choices[0].finish_reason,
-                    input_tokens=chunk.usage.input_tokens if chunk.usage else None,
-                    output_tokens=chunk.usage.output_tokens if chunk.usage else None,
+                    input_tokens=getattr(chunk.usage, "prompt_tokens", None) if chunk.usage else None,
+                    output_tokens=getattr(chunk.usage, "completion_tokens", None) if chunk.usage else None,
                 )
 
     async def generate_title(
@@ -188,7 +193,7 @@ class OpenAIProvider(AIProvider):
         max_tokens: int | None = None,
     ) -> ChatCompletionResult:
         model = model or settings.AI_DEFAULT_MODEL
-        kwargs: dict[str, Any] = {"model": model, "messages": messages}
+        kwargs: dict[str, Any] = {"model": model, "messages": messages,"max_tokens": settings.AI_MAX_TOKENS,}
         if tools:
             kwargs["tools"] = tools
         if temperature is not None:
@@ -214,8 +219,8 @@ class OpenAIProvider(AIProvider):
         return ChatCompletionResult(
             content=msg.content,
             tool_calls=tool_calls,
-            input_tokens=response.usage.input_tokens if response.usage else None,
-            output_tokens=response.usage.output_tokens if response.usage else None,
+            input_tokens=getattr(response.usage, "prompt_tokens", None) if response.usage else None,
+            output_tokens=getattr(response.usage, "completion_tokens", None) if response.usage else None,
         )
 
 

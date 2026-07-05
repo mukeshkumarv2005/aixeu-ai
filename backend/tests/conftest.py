@@ -27,6 +27,13 @@ def _compile_jsonb_sqlite(type_, compiler, **kw):  # noqa: ARG001
     return "JSON"
 
 from app.api.deps import get_db
+from app.core.config import settings
+
+# Force tests to use mock AI providers and mock embeddings
+settings.OPENAI_API_KEY = ""
+settings.ANTHROPIC_API_KEY = ""
+settings.EMBEDDING_PROVIDER = "mock"
+
 from app.core.security import (
     create_access_token,
     create_refresh_jti,

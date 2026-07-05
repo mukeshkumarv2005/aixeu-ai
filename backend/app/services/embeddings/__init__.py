@@ -65,7 +65,10 @@ class OpenAIEmbeddingProvider(EmbeddingProvider):
     def __init__(self) -> None:
         from openai import AsyncOpenAI
 
-        self._client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
+        self._client = AsyncOpenAI(
+            api_key=settings.OPENAI_API_KEY,
+            base_url="https://openrouter.ai/api/v1",
+        )
 
     async def generate_embeddings(
         self,
@@ -165,7 +168,7 @@ class MockEmbeddingProvider(EmbeddingProvider):
     """
 
     def __init__(self) -> None:
-        self._dim = 4
+        self._dim = 1536
 
     async def generate_embeddings(
         self,

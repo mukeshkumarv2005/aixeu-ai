@@ -525,17 +525,24 @@ function ConversationItem({
 
   return (
     <li>
-      <button
+      <div
         onClick={onClick}
-        disabled={isStreaming}
         onMouseEnter={() => setShowDelete(true)}
         onMouseLeave={() => setShowDelete(false)}
+        role="button"
+        tabIndex={0}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault()
+            onClick()
+          }
+        }}
         className={cn(
-          'group flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-left text-sm transition-colors',
+          'group flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-left text-sm transition-colors cursor-pointer select-none',
           isActive
             ? 'bg-primary-50 text-primary-700 dark:bg-primary-900/20 dark:text-primary-300'
             : 'text-surface-700 hover:bg-surface-100 dark:text-surface-300 dark:hover:bg-surface-800',
-          isStreaming && 'cursor-not-allowed opacity-50',
+          isStreaming && 'cursor-not-allowed opacity-50 pointer-events-none',
         )}
       >
         <MessageSquare
@@ -558,9 +565,13 @@ function ConversationItem({
 
         {/* Delete button (visible on hover) */}
         <button
-          onClick={onDelete}
+          onClick={(e) => {
+            e.stopPropagation()
+            onDelete(e)
+          }}
+          disabled={isStreaming}
           className={cn(
-            'shrink-0 rounded-lg p-1.5 text-surface-400 transition-all hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-900/20 dark:hover:text-red-400',
+            'shrink-0 rounded-lg p-1.5 text-surface-400 transition-all hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-900/20 dark:hover:text-red-400 pointer-events-auto',
             showDelete
               ? 'translate-x-0 opacity-100'
               : 'translate-x-1 opacity-0',
@@ -569,7 +580,7 @@ function ConversationItem({
         >
           <Trash2 size={14} />
         </button>
-      </button>
+      </div>
     </li>
   )
 }

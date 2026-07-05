@@ -27,9 +27,9 @@ class KnowledgeSearchTool(BaseTool):
 
     def __init__(self) -> None:
         super().__init__()
-        from app.services.search import SearchService
+        from app.services.search import GlobalSearchService
 
-        self._search_service_cls = SearchService
+        self._search_service_cls = GlobalSearchService
 
     async def execute(
         self,
@@ -43,17 +43,21 @@ class KnowledgeSearchTool(BaseTool):
             return ToolResult(success=False, output="No query provided", error="Missing query")
 
         try:
+            from app.schemas.search import SearchFilters
+
             search_svc = self._search_service_cls(ctx.db_session)
-            results = await search_svc.hybrid_search(
+            filters = SearchFilters(kb_id=kb_id, entity_types=["kb_document"])
+            results_resp = await search_svc.search(
                 query=query,
                 user_id=ctx.user_id,
-                kb_id=kb_id,
+                filters=filters,
                 limit=min(max_results, 20),
             )
+            results = results_resp.results
             snippets = []
             for hit in results:
                 snippets.append(
-                    f"[{hit.source_type}] {hit.title}\n{hit.snippet[:500]}"
+                    f"[{hit.entity_type}] {hit.title}\n{hit.snippet[:500]}"
                 )
             output = "\n\n".join(snippets) if snippets else "No results found."
             return ToolResult(

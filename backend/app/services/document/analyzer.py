@@ -223,7 +223,10 @@ class OpenAIAnalyzer(AIAnalyzer):
         try:
             from openai import AsyncOpenAI
 
-            client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
+            client = AsyncOpenAI(
+                api_key=settings.OPENAI_API_KEY,
+                base_url="https://openrouter.ai/api/v1",
+            )
 
             # Truncate text to avoid exceeding context limits (~128k tokens ≈ ~500k chars)
             truncated = text[:500000] if text else ""
@@ -243,7 +246,7 @@ class OpenAIAnalyzer(AIAnalyzer):
             )
 
             response = await client.chat.completions.create(
-                model="gpt-4o-mini",
+                model=settings.AI_DEFAULT_MODEL,
                 messages=[
                     {"role": "system", "content": system_prompt},
                     {

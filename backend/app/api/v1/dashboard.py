@@ -137,7 +137,7 @@ async def get_usage(
     storage_files = row[1] or 0
 
     # ── Daily breakdown (last 30 days) ─────────────────────────────────
-    cutoff = datetime.now(timezone.utc) - timedelta(days=30)
+    cutoff = (datetime.now(timezone.utc) - timedelta(days=30)).replace(tzinfo=None)
     result = await db.execute(
         select(
             sa_func.date(Message.created_at).label("day"),

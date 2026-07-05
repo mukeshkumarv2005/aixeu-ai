@@ -34,8 +34,8 @@ class Chunk:
     """A single chunk of text from a document."""
 
     content: str
-    chunk_index: int
-    char_count: int
+    chunk_index: int = 0
+    char_count: int = 0
     token_count: int | None = None
     chunk_type: str = "recursive"
     metadata: dict[str, Any] = field(default_factory=dict)

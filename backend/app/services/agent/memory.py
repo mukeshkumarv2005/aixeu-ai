@@ -350,6 +350,8 @@ class AgentMemoryService:
             Number of deleted rows.
         """
         now = datetime.now(timezone.utc)
+        if self.db.bind and self.db.bind.dialect.name == "sqlite":
+            now = now.replace(tzinfo=None)
         stmt = delete(AgentMemory).where(AgentMemory.expires_at < now)
         result = await self.db.execute(stmt)
         await self.db.commit()

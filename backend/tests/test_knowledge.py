@@ -121,7 +121,7 @@ class TestKnowledgeBaseCRUD:
         assert resp.status_code == 201
         data = resp.json()
         assert data["embedding_model"] == "text-embedding-ada-002"
-        assert data["dimension"] == 4  # MockEmbeddingProvider default
+        assert data["dimension"] == 1536  # MockEmbeddingProvider default
 
     async def test_create_knowledge_base_without_name_returns_422(
         self, client: AsyncClient, db_session: AsyncSession

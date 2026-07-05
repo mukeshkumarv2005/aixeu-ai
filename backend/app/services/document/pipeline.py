@@ -20,6 +20,7 @@ from pathlib import Path
 from uuid import UUID
 
 from sqlalchemy import select
+from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.document import DocumentAnalysis, DocumentChunk, DocumentMetadata
@@ -74,7 +75,9 @@ class DocumentPipeline:
         """
         # ── Load the file record ──────────────────────────────────────────
         result = await self.db.execute(
-            select(FileModel).where(
+            select(FileModel)
+            .options(selectinload(FileModel.document_metadata))
+            .where(
                 FileModel.id == file_id,
                 FileModel.user_id == user_id,
             )

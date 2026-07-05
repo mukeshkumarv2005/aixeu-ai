@@ -264,40 +264,43 @@ export default function StoragePage() {
 
         // Use XMLHttpRequest for progress tracking
         await new Promise<void>((resolve, reject) => {
-          const xhr = new XMLHttpRequest()
-          xhr.open('POST', '/api/v1/storage/upload')
+          import('@/stores/auth')
+            .then(({ useAuthStore }) => {
+              const token = useAuthStore.getState().accessToken
+              const xhr = new XMLHttpRequest()
+              xhr.open('POST', '/api/v1/storage/upload')
 
-          // Inject Bearer token
-          import('@/stores/auth').then(({ useAuthStore }) => {
-            const token = useAuthStore.getState().accessToken
-            if (token) xhr.setRequestHeader('Authorization', `Bearer ${token}`)
-          })
-
-          xhr.upload.onprogress = (e) => {
-            if (e.lengthComputable) {
-              setUploadProgress(Math.round((e.loaded / e.total) * 100))
-            }
-          }
-
-          xhr.onload = () => {
-            if (xhr.status >= 200 && xhr.status < 300) {
-              setUploadProgress(100)
-              setUploadStatus('done')
-              resolve()
-            } else {
-              let detail = 'Upload failed'
-              try {
-                const body = JSON.parse(xhr.responseText)
-                detail = body.detail ?? detail
-              } catch {
-                // ignore
+              if (token) {
+                xhr.setRequestHeader('Authorization', `Bearer ${token}`)
               }
-              reject(new ApiError(xhr.status, detail))
-            }
-          }
 
-          xhr.onerror = () => reject(new Error('Network error'))
-          xhr.send(formData)
+              xhr.upload.onprogress = (e) => {
+                if (e.lengthComputable) {
+                  setUploadProgress(Math.round((e.loaded / e.total) * 100))
+                }
+              }
+
+              xhr.onload = () => {
+                if (xhr.status >= 200 && xhr.status < 300) {
+                  setUploadProgress(100)
+                  setUploadStatus('done')
+                  resolve()
+                } else {
+                  let detail = 'Upload failed'
+                  try {
+                    const body = JSON.parse(xhr.responseText)
+                    detail = body.detail ?? detail
+                  } catch {
+                    // ignore
+                  }
+                  reject(new ApiError(xhr.status, detail))
+                }
+              }
+
+              xhr.onerror = () => reject(new Error('Network error'))
+              xhr.send(formData)
+            })
+            .catch(reject)
         })
 
         await fetchFiles()

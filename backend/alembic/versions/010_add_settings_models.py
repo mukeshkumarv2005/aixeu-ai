@@ -317,32 +317,12 @@ def upgrade() -> None:
     )
 
     # ── User table additions ─────────────────────────────────────────────────────
-    op.add_column(
-        "users",
-        sa.Column(
-            "last_login_at",
-            sa.DateTime(timezone=True),
-            nullable=True,
-            comment="Timestamp of the most recent successful login",
-        ),
-    )
-    op.add_column(
-        "users",
-        sa.Column(
-            "two_factor_enabled",
-            sa.Boolean(),
-            nullable=False,
-            server_default="false",
-            comment="Whether two-factor authentication is enabled (reserved for future use)",
-        ),
-    )
+    # NOTE: `last_login_at` and `two_factor_enabled` were already created
+    # by migration 000 (which builds users from the ORM model).  They are
+    # omitted here to avoid duplicate-column errors.
 
 
 def downgrade() -> None:
-    # Remove user columns
-    op.drop_column("users", "two_factor_enabled")
-    op.drop_column("users", "last_login_at")
-
     # Drop tables (reverse order of creation)
     op.drop_table("user_sessions")
     op.drop_table("api_provider_configs")

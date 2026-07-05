@@ -88,11 +88,12 @@ class KnowledgeBase(UUIDMixin, TimestampMixin, Base):
         cascade="all, delete-orphan",
         order_by="KnowledgeBaseDocument.created_at.desc()",
     )
-    embeddings: Mapped[list[DocumentEmbedding]] = relationship(
-        "DocumentEmbedding",
-        back_populates="knowledge_base",
-        cascade="all, delete-orphan",
-    )
+    if HAS_PGVECTOR:
+        embeddings: Mapped[list[DocumentEmbedding]] = relationship(
+            "DocumentEmbedding",
+            back_populates="knowledge_base",
+            cascade="all, delete-orphan",
+        )
 
     def __repr__(self) -> str:
         return (
@@ -169,11 +170,12 @@ class KnowledgeBaseDocument(UUIDMixin, TimestampMixin, Base):
         "File",
         back_populates="kb_documents",
     )
-    embeddings: Mapped[list[DocumentEmbedding]] = relationship(
-        "DocumentEmbedding",
-        back_populates="kb_document",
-        cascade="all, delete-orphan",
-    )
+    if HAS_PGVECTOR:
+        embeddings: Mapped[list[DocumentEmbedding]] = relationship(
+            "DocumentEmbedding",
+            back_populates="kb_document",
+            cascade="all, delete-orphan",
+        )
     tasks: Mapped[list[Task]] = relationship(
         "Task",
         back_populates="kb_document",
