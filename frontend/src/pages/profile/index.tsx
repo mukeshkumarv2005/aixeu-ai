@@ -1,7 +1,7 @@
 /** Profile page — view and edit account details.
  */
 
-import { useState, useRef, useCallback } from 'react'
+import { useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '@/stores/auth'
 import {
@@ -10,7 +10,6 @@ import {
   Shield,
   Calendar,
   BadgeCheck,
-  AlertTriangle,
   LogOut,
   Save,
   Eye,
@@ -306,7 +305,6 @@ export default function ProfilePage() {
                   value={displayName}
                   onChange={(e) => setDisplayName(e.target.value)}
                   className="w-full rounded-xl border border-surface-250 bg-surface-50 px-4 py-2.5 text-sm outline-none transition-all focus:border-primary-400 focus:ring-2 focus:ring-primary-100 dark:border-surface-800 dark:bg-surface-900 dark:text-white dark:focus:border-primary-500 dark:focus:ring-primary-900/25"
-                  placeholder="E.g. Mukesh Kumar"
                 />
               </div>
 
@@ -352,6 +350,7 @@ export default function ProfilePage() {
                   value={currentPassword}
                   onChange={(e) => setCurrentPassword(e.target.value)}
                   className="w-full rounded-xl border border-surface-250 bg-surface-50 px-4 py-2.5 text-sm outline-none transition-all focus:border-primary-400 focus:ring-2 focus:ring-primary-100 dark:border-surface-800 dark:bg-surface-900 dark:text-white dark:focus:border-primary-500 dark:focus:ring-primary-900/25"
+                  placeholder="••••••••"
                   required
                 />
               </div>
@@ -365,6 +364,7 @@ export default function ProfilePage() {
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
                     className="w-full rounded-xl border border-surface-250 bg-surface-50 px-4 py-2.5 text-sm outline-none transition-all focus:border-primary-400 focus:ring-2 focus:ring-primary-100 dark:border-surface-800 dark:bg-surface-900 dark:text-white dark:focus:border-primary-500 dark:focus:ring-primary-900/25"
+                    placeholder="••••••••"
                     required
                   />
                 </div>
@@ -377,6 +377,7 @@ export default function ProfilePage() {
                     value={confirmNewPassword}
                     onChange={(e) => setConfirmNewPassword(e.target.value)}
                     className="w-full rounded-xl border border-surface-250 bg-surface-50 px-4 py-2.5 text-sm outline-none transition-all focus:border-primary-400 focus:ring-2 focus:ring-primary-100 dark:border-surface-800 dark:bg-surface-900 dark:text-white dark:focus:border-primary-500 dark:focus:ring-primary-900/25"
+                    placeholder="••••••••"
                     required
                   />
                 </div>
